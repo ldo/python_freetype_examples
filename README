@@ -1,0 +1,12 @@
+These scripts show examples of the use of my
+[python_freetype](https://github.com/ldo/python_freetype) module. You
+will need to have that installed before you can run these. The
+examples are:
+
+* code_coverage -- show the character code coverage of a font
+* render_text -- simple renderer of a line of text (also needs Pycairo)
+
+See the header comments in each script for more details.
+
+Lawrence D'Oliveiro <ldo@geek-central.gen.nz>
+2015 February 23

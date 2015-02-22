@@ -1,0 +1,99 @@
+#!/usr/bin/python3
+#+
+# Example use of my Python FreeType binding: render a text string to a PNG file.
+# Invoke this script as follows:
+#
+#     render_text <text> <fontspec> <textsize> <outfile>
+#
+# where <text> is the text string to render, <fontspec> is a Fontconfig
+# pattern string identifying the font to use, <textsize> is the numeric
+# text size at which to render the text, and <outfile> is the name of
+# the output PNG file to which to save the result.
+#
+# This script does very simplistic rendering, without catering for
+# bidirectional ordering or contextual forms.
+#
+# Copyright 2015 by Lawrence D'Oliveiro <ldo@geek-central.gen.nz>. This
+# script is licensed CC0
+# <https://creativecommons.org/publicdomain/zero/1.0/>; do with it
+# what you will.
+#-
+
+import sys
+import cairo
+import getopt
+import freetype
+FT = freetype.FT
+
+if len(sys.argv) != 5 :
+    raise getopt.GetoptError("usage: %s <text> <fontspec> <textsize> <outfile>" % sys.argv[0])
+#end if
+text, fontspec, textsize, outfile = sys.argv[1:5]
+textsize = float(textsize)
+
+lib = freetype.Library()
+face = lib.find_face(fontspec)
+sys.stderr.write("Using font %s %s from %s\n" % (face.family_name, face.style_name, face.filename))
+face.set_char_size(size = textsize, resolution = 90)
+width = 0
+max_ascender = 0
+max_descender = 0
+prev_glyph = None
+for ch in text :
+    this_glyph = face.get_char_index(ord(ch))
+    face.load_glyph(this_glyph, FT.LOAD_DEFAULT)
+    if prev_glyph != None :
+        kern = face.get_kerning(prev_glyph, this_glyph, FT.KERNING_DEFAULT).x
+    else :
+        kern = 0
+    #end if
+    width += face.glyph.metrics["horiAdvance"] + kern
+    max_ascender = max(max_ascender, face.glyph.metrics["horiBearingY"])
+    max_descender = max(max_descender, face.glyph.metrics["height"] - face.glyph.metrics["horiBearingY"])
+    # sys.stderr.write("char %d w×h = %.3f×%.3f ascender %.3f kern %.3f\n" % (ord(ch), face.glyph.metrics["horiAdvance"], face.glyph.metrics["height"], face.glyph.metrics["horiBearingY"], kern)) # debug
+    prev_glyph = this_glyph
+#end for
+height = max_ascender + max_descender
+sys.stderr.write("bitmap dimensions w×h = %.1f×%.1f\n" % (width, height)) # debug
+pix = cairo.ImageSurface(cairo.FORMAT_ARGB32, round(width), round(height))
+g = cairo.Context(pix)
+if False :
+    m = cairo.Matrix()
+    m.translate(0, height / 2)
+    m.scale(1, -1)
+    m.translate(0, - height / 2)
+    g.transform(m)
+#end if
+g.set_source_rgba(1, 1, 1, 1)
+g.set_operator(cairo.OPERATOR_SOURCE)
+g.paint()
+g.set_source_rgba(0, 0, 0, 1)
+pos = 0
+prev_glyph = None
+for ch in text :
+    this_glyph = face.get_char_index(ord(ch))
+    face.load_glyph(this_glyph, FT.LOAD_DEFAULT)
+    face.glyph.render_glyph(FT.RENDER_MODE_NORMAL)
+    if prev_glyph != None :
+        kern = face.get_kerning(prev_glyph, this_glyph, FT.KERNING_DEFAULT).x
+    else :
+        kern = 0
+    #end if
+    if True :
+        if face.glyph.metrics["height"] != 0 : # will be 0 for empty glyph (e.g. space character)
+            img = face.glyph.bitmap.make_image_surface()
+            g.mask_surface(img, pos, max_ascender - face.glyph.metrics["horiBearingY"])
+        #end if
+    else :
+        # debug
+        g.new_path()
+        sys.stderr.write("glyph bounds %.3f,0:%.3f,%.3f\n" % (pos, face.glyph.metrics["horiAdvance"], face.glyph.metrics["height"])) # debug
+        g.rectangle(pos, 0, face.glyph.metrics["horiAdvance"], face.glyph.metrics["height"])
+        g.fill()
+    #end if
+    pos += face.glyph.metrics["horiAdvance"] + kern
+    prev_glyph = this_glyph
+#end for
+pix.flush()
+pix.write_to_png(outfile)
+sys.stderr.write("image written to %s\n" % outfile) # debug
