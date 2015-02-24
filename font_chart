@@ -61,16 +61,22 @@ nr_blocks = 0
 nr_rows = 0
 show_blocks = []
 for block in code_blocks :
-    present = list(filterfalse(lambda c : show_face.get_char_index(c) == 0, range(block.lo, block.hi + 1)))
-    if len(present) != 0 :
+    show_rows = set \
+      (
+        math.floor(c / nr_cols)
+        for c in filterfalse
+          (
+            lambda c : show_face.get_char_index(c) == 0, range(block.lo, block.hi + 1)
+          )
+      )
+    if len(show_rows) != 0 :
         nr_blocks += 1
         show_block = \
             {
                 "name" : block.name,
-                "lo" : math.floor(min(present) / nr_cols),
-                "end" : math.ceil(max(present) / nr_cols),
+                "rows" : sorted(show_rows),
             }
-        nr_rows += show_block["end"] - show_block["lo"]
+        nr_rows += len(show_rows)
         show_blocks.append(show_block)
     #end if
 #end for
@@ -115,7 +121,7 @@ for block in show_blocks :
     g.show_text(block["name"])
     y += max_label_large_descender
     g.set_font_size(label_small_size)
-    for row in range(block["lo"], block["end"]) :
+    for row in block["rows"] :
         y += max_show_ascender
         x = 0
         for code in range(row * nr_cols, (row + 1) * nr_cols) :
