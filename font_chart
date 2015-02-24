@@ -88,6 +88,7 @@ pix = cairo.ImageSurface \
             nr_rows * (max_show_ascender + max_show_descender + max_label_small_ascender + max_label_small_descender)
       ), # height
   )
+sys.stderr.write("creating image w×h = %d×%d\n" % (pix.get_width(), pix.get_height())) # debug
 g = cairo.Context(pix)
 g.set_source_rgba(1, 1, 1)
 g.set_operator(cairo.OPERATOR_SOURCE)
@@ -138,7 +139,6 @@ for block in show_blocks :
                     y + max_show_descender + max_label_small_ascender
                   )
                 g.show_text(label)
-            # else TBD fill cell with light grey
             #end if
             x += max_show_advance
         #end for
@@ -146,4 +146,7 @@ for block in show_blocks :
     #end for
 #end for
 pix.flush()
+sys.stderr.write("saving to %s..." % outfilename)
+sys.stderr.flush()
 pix.write_to_png(outfilename)
+sys.stderr.write("done.\n")
