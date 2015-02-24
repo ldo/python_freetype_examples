@@ -4,9 +4,13 @@ will need to have that installed before you can run these. The
 examples are:
 
 * code_coverage -- show the character code coverage of a font
+* font_chart -- generate a chart of all characters in a font (also needs Pycairo)
 * render_text -- simple renderer of a line of text (also needs Pycairo)
+
+The file code_blocks.py contains some common Unicode definitions
+needed by a couple of the scripts.
 
 See the header comments in each script for more details.
 
 Lawrence D'Oliveiro <ldo@geek-central.gen.nz>
-2015 February 23
+2015 February 24

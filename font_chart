@@ -1,0 +1,117 @@
+#!/usr/bin/python3
+#+
+# Example use of python_freetype: print a chart of all glyphs,
+# and corresponding character codes, encoded by a specified font.
+# Invoke this script as follows:
+#
+#     font_chart <fontspec> <outfile>
+#
+# where <fontspec> is the Fontconfig pattern string identifying the
+# font to use, and <outfile> is the name to give to the output PNG
+# file containing the generated chart.
+#
+# This script relies on functionality added in my custom patches
+# to Pycairo, available here <https://github.com/ldo/pycairo>.
+#
+# Copyright 2015 by Lawrence D'Oliveiro <ldo@geek-central.gen.nz>. This
+# script is licensed CC0
+# <https://creativecommons.org/publicdomain/zero/1.0/>; do with it
+# what you will.
+#-
+
+import sys
+import math
+from itertools import \
+    filterfalse
+import cairo
+import freetype
+
+from code_blocks import \
+    code_blocks
+
+if len(sys.argv) != 3 :
+    raise RuntimeError("need two args, the Fontconfig pattern string and the output filename")
+#end if
+patternstr, outfilename = sys.argv[1:]
+textsize = 48 # maybe make this user-specifiable later
+text_resolution = 90
+nr_cols = 32
+
+lib = freetype.Library()
+show_face = lib.find_face(patternstr)
+label_face = lib.find_face("palatino")
+sys.stderr.write("show font family %s style %s filename %s\n" % (show_face.family_name, show_face.style_name, show_face.filename)) # debug
+sys.stderr.write("label font family %s style %s filename %s\n" % (label_face.family_name, label_face.style_name, label_face.filename)) # debug
+show_face.set_char_size(size = textsize, resolution = text_resolution)
+label_face.set_char_size(size = textsize, resolution = text_resolution)
+max_show_ascender = show_face.size["metrics"]["ascender"]
+max_show_descender = - show_face.size["metrics"]["descender"]
+max_show_advance = show_face.size["metrics"]["max_advance"]
+max_label_ascender = label_face.size["metrics"]["ascender"]
+max_label_descender = - label_face.size["metrics"]["descender"]
+sys.stderr.write("ascender = %.3f, descender = %.3f, height = %.3f, max_advance = %.3f\n" % (max_show_ascender, max_show_descender, show_face.size["metrics"]["height"], max_show_advance)) # debug
+
+nr_blocks = 0
+nr_rows = 0
+show_blocks = []
+for block in code_blocks :
+    block_len = block.hi + 1 - block.lo
+    present = list(filterfalse(lambda c : show_face.get_char_index(c) == 0, range(block.lo, block.hi + 1)))
+    if len(present) != 0 :
+        nr_blocks += 1
+        show_block = \
+            {
+                "name" : block.name,
+                "lo" : math.floor(min(present) / nr_cols),
+                "end" : math.ceil(max(present) / nr_cols),
+            }
+        sys.stderr.write("%s: %d/%d show %d..%d\n" % (block.name, len(present), block_len, show_block["lo"] * nr_cols, (show_block["end"] - 1) * nr_cols)) # debug
+        nr_rows += show_block["end"] - show_block["lo"]
+        show_blocks.append(show_block)
+    #end if
+#end for
+
+pix = cairo.ImageSurface \
+  (
+    cairo.FORMAT_RGB24,
+    round(nr_cols * max_show_advance), # width
+    round(nr_blocks * (max_label_ascender + max_label_descender) + nr_rows * (max_show_ascender + max_show_descender)), # height
+  )
+# FIXME: perhaps I should just get bitmaps or paths from freetype for rendering in Cairo,
+# rather than rely on updated Pycairo with FreeType/Fontconfig support.
+cairo_show_font = cairo.FontFace.new_from_file(show_face.filename)
+cairo_label_font = cairo.FontFace.new_from_file(label_face.filename)
+g = cairo.Context(pix)
+g.set_source_rgb(1, 1, 1)
+g.paint()
+g.set_source_rgb(0, 0, 0)
+y = 0
+for block in show_blocks :
+    y += max_label_ascender
+    g.set_font_face(cairo_label_font)
+    g.set_font_size(textsize)
+    g.move_to \
+      (
+        (pix.get_width() - g.text_extents(block["name"])[2]) / 2, # horizontally centred
+        y
+      )
+    g.show_text(block["name"])
+    y += max_label_descender
+    g.set_font_face(cairo_show_font)
+    g.set_font_size(textsize)
+    for row in range(block["lo"], block["end"]) :
+        y += max_show_ascender
+        x = 0
+        for code in range(row * nr_cols, (row + 1) * nr_cols) :
+            if show_face.get_char_index(code) != 0 :
+                g.move_to(x, y)
+                g.show_text(chr(code))
+            # else TBD fill cell with light grey
+            #end if
+            x += max_show_advance
+        #end for
+        y += max_show_descender
+    #end for
+#end for
+pix.flush()
+pix.write_to_png(outfilename)
