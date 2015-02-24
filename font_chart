@@ -114,12 +114,12 @@ g.show_text(show_name)
 y = max_title_ascender + max_title_descender
 for block in show_blocks :
     y += max_label_large_ascender
+    g.set_font_size(label_large_size)
     g.move_to \
       (
         (pix.get_width() - g.text_extents(block["name"])[2]) / 2, # horizontally centred
         y
       )
-    g.set_font_size(label_large_size)
     g.show_text(block["name"])
     y += max_label_large_descender
     g.set_font_size(label_small_size)
