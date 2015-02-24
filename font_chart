@@ -75,6 +75,8 @@ for block in code_blocks :
             {
                 "name" : block.name,
                 "rows" : sorted(show_rows),
+                "lo" : block.lo,
+                "hi" : block.hi,
             }
         nr_rows += len(show_rows)
         show_blocks.append(show_block)
@@ -125,7 +127,11 @@ for block in show_blocks :
         y += max_show_ascender
         x = 0
         for code in range(row * nr_cols, (row + 1) * nr_cols) :
-            glyph_code = show_face.get_char_index(code)
+            if code >= block["lo"] and code <= block["hi"] : # row might span two blocks
+                glyph_code = show_face.get_char_index(code)
+            else :
+                glyph_code = 0
+            #end if
             if glyph_code != 0 :
                 show_face.load_glyph(glyph_code, FT.LOAD_DEFAULT)
                 if show_face.glyph.metrics["height"] != 0 : # will be 0 for empty glyph (e.g. space character)
