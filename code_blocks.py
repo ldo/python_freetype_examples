@@ -17,7 +17,7 @@ class CodeBlock :
     def __init__(self, name, lo, hi) :
         self.name = name
         self.lo = lo
-        self.hi = hi
+        self.end = hi + 1
     #end __init__
 
 #end CodeBlock

@@ -66,7 +66,7 @@ for block in code_blocks :
         math.floor(c / nr_cols)
         for c in filterfalse
           (
-            lambda c : show_face.get_char_index(c) == 0, range(block.lo, block.hi + 1)
+            lambda c : show_face.get_char_index(c) == 0, range(block.lo, block.end)
           )
       )
     if len(show_rows) != 0 :
@@ -76,7 +76,7 @@ for block in code_blocks :
                 "name" : block.name,
                 "rows" : sorted(show_rows),
                 "lo" : block.lo,
-                "hi" : block.hi,
+                "end" : block.end,
             }
         nr_rows += len(show_rows)
         show_blocks.append(show_block)
@@ -127,7 +127,7 @@ for block in show_blocks :
         y += max_show_ascender
         x = 0
         for code in range(row * nr_cols, (row + 1) * nr_cols) :
-            if code >= block["lo"] and code <= block["hi"] : # row might span two blocks
+            if code >= block["lo"] and code < block["end"] : # row might span more than one block
                 glyph_code = show_face.get_char_index(code)
             else :
                 glyph_code = 0

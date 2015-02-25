@@ -114,8 +114,8 @@ lib = freetype.Library()
 face = lib.find_face(sys.argv[1])
 sys.stdout.write("font family %s style %s filename %s\n" % (face.family_name, face.style_name, face.filename))
 for block in code_blocks :
-    block_len = block.hi + 1 - block.lo
-    count = len(list(filterfalse(lambda g : g == 0, (face.get_char_index(c) for c in range(block.lo, block.hi + 1)))))
+    block_len = block.end - block.lo
+    count = len(list(filterfalse(lambda g : g == 0, (face.get_char_index(c) for c in range(block.lo, block.end)))))
     if count != 0 :
         sys.stdout.write("%%%ds: %%d/%%d\n" % max_block_name_len % (block.name, count, block_len))
     #end if
