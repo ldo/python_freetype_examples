@@ -59,7 +59,8 @@ max_label_small_ascender, max_label_small_descender, _, _, _ = g.font_extents()
 
 nr_blocks = 0
 nr_rows = 0
-show_blocks = []
+show_char_blocks = []
+unmapped_glyphs = set(range(1, show_face.num_glyphs)) # always ignore glyph 0
 for block in code_blocks :
     show_rows = set \
       (
@@ -69,6 +70,7 @@ for block in code_blocks :
             lambda c : show_face.get_char_index(c) == 0, range(block.lo, block.end)
           )
       )
+    unmapped_glyphs -= set(show_face.get_char_index(c) for c in range(block.lo, block.end))
     if len(show_rows) != 0 :
         nr_blocks += 1
         show_block = \
@@ -79,9 +81,14 @@ for block in code_blocks :
                 "end" : block.end,
             }
         nr_rows += len(show_rows)
-        show_blocks.append(show_block)
+        show_char_blocks.append(show_block)
     #end if
 #end for
+show_glyph_rows = list(sorted(set(math.floor(c / nr_cols) for c in unmapped_glyphs)))
+if len(show_glyph_rows) != 0 :
+    nr_rows += len(show_glyph_rows)
+    nr_blocks += 1
+#end if
 
 pix = cairo.ImageSurface \
   (
@@ -112,7 +119,7 @@ g.move_to \
   )
 g.show_text(show_name)
 y = max_title_ascender + max_title_descender
-for block in show_blocks :
+for block in show_char_blocks :
     y += max_label_large_ascender
     g.set_font_size(label_large_size)
     g.move_to \
@@ -157,6 +164,47 @@ for block in show_blocks :
         y += max_show_descender + max_label_small_ascender + max_label_small_descender
     #end for
 #end for
+if len(show_glyph_rows) != 0 :
+    block_name = "Unmapped Glyphs"
+    y += max_label_large_ascender
+    g.set_font_size(label_large_size)
+    g.move_to \
+      (
+        (pix.get_width() - g.text_extents(block_name)[2]) / 2, # horizontally centred
+        y
+      )
+    g.show_text(block_name)
+    y += max_label_large_descender
+    g.set_font_size(label_small_size)
+    for row in show_glyph_rows :
+        y += max_show_ascender
+        x = 0
+        for glyph_code in range(row * nr_cols, (row + 1) * nr_cols) :
+            if glyph_code in unmapped_glyphs :
+                show_face.load_glyph(glyph_code, FT.LOAD_DEFAULT)
+                if show_face.glyph.metrics["height"] != 0 : # will be 0 for empty glyph (e.g. space character)
+                    show_face.glyph.render_glyph(FT.RENDER_MODE_NORMAL)
+                    img = show_face.glyph.bitmap.make_image_surface()
+                    g.mask_surface \
+                      (
+                        img,
+                        x + (max_show_advance - img.get_width()) / 2,
+                        y - show_face.glyph.metrics["horiBearingY"]
+                      )
+                #end if
+                label = "%#x" % glyph_code
+                g.move_to \
+                  (
+                    x + (max_show_advance - g.text_extents(label)[2]) / 2,
+                    y + max_show_descender + max_label_small_ascender
+                  )
+                g.show_text(label)
+            #end if
+            x += max_show_advance
+        #end for
+        y += max_show_descender + max_label_small_ascender + max_label_small_descender
+    #end for
+#end if
 pix.flush()
 sys.stderr.write("saving to %s..." % outfilename)
 sys.stderr.flush()

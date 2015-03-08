@@ -168,7 +168,7 @@ for block in code_blocks :
 #end for
 
 char_runs = CodeRuns()
-unmapped_glyph_runs = CodeRuns((1, face.num_glyphs))
+unmapped_glyph_runs = CodeRuns((1, face.num_glyphs)) # always ignore glyph 0
 for char_code, glyph_code in face.char_glyphs() :
     char_runs.add(char_code)
     unmapped_glyph_runs.remove(glyph_code)
