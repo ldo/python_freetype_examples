@@ -32,10 +32,14 @@ max_block_name_len = max(len(block.name) for block in code_blocks)
 #-
 
 class CodeRuns :
-    "collecting contiguous runs of character codes."
+    "collecting contiguous runs of character/glyph codes."
 
-    def __init__(self) :
-        self._runs = []
+    def __init__(self, initial_run = None) :
+        if initial_run != None :
+            self._runs = [(initial_run[0], initial_run[1])]
+        else :
+            self._runs = []
+        #end if
     #end __init__
 
     def add(self, code) :
@@ -92,6 +96,48 @@ class CodeRuns :
         #end if
     #end add
 
+    def remove(self, code) :
+        "removes the specified code, if it is there."
+        i = 0
+        while True :
+            if i == len(self._runs) :
+                i = None
+                break
+            #end if
+            if self._runs[i][0] <= code < self._runs[i][1] :
+                break
+            i += 1
+        #end while
+        if i != None :
+            run = self._runs[i]
+            run2 = None
+            if code == run[0] :
+                run = (run[0] + 1, run[1])
+                if run[0] == run[1] :
+                    run = None
+                #end if
+            elif code + 1 == run[1] :
+                run = (run[0], run[1] - 1)
+                if run[0] == run[1] :
+                    run = None
+                #end if
+            else :
+                # split into two runs
+                run2 = (run[0], code)
+                run = (code + 1, run[1])
+            #end if
+            if run == None :
+                # run disappears
+                self._runs[i : i + 1] = []
+            elif run2 != None :
+                # split into two runs
+                self._runs[i : i + 1] = [run2, run]
+            else :
+                self._runs[i] = run
+            #end if
+        #end if
+    #end remove
+
     def runs(self) :
         "yields a succession of pairs (lo, end), one for each contiguous run of codes," \
         " in increasing code order."
@@ -121,13 +167,15 @@ for block in code_blocks :
     #end if
 #end for
 
-runs = CodeRuns()
+char_runs = CodeRuns()
+unmapped_glyph_runs = CodeRuns((1, face.num_glyphs))
 for char_code, glyph_code in face.char_glyphs() :
-    runs.add(char_code)
+    char_runs.add(char_code)
+    unmapped_glyph_runs.remove(glyph_code)
 #end for
-first_run = True
 sys.stdout.write("Code runs: ")
-for run in runs.runs() :
+first_run = True
+for run in char_runs.runs() :
     if first_run :
         first_run = False
     else :
@@ -137,6 +185,24 @@ for run in runs.runs() :
         sys.stdout.write("U+%X" % run[0])
     else :
         sys.stdout.write("U+%X..U+%X" % (run[0], run[1] - 1))
+    #end if
+#end for
+if first_run :
+    sys.stdout.write("(NONE!)")
+#end if
+sys.stdout.write("\n")
+sys.stdout.write("Unmapped glyphs: ")
+first_run = True
+for run in unmapped_glyph_runs.runs() :
+    if first_run :
+        first_run = False
+    else :
+        sys.stdout.write(", ")
+    #end if
+    if run[1] - run[0] == 1 :
+        sys.stdout.write("%#x" % run[0])
+    else :
+        sys.stdout.write("%#x..%#x" % (run[0], run[1] - 1))
     #end if
 #end for
 if first_run :
