@@ -21,7 +21,7 @@
 import sys
 from itertools import \
     filterfalse
-import freetype
+import freetype2 as freetype
 from code_blocks import \
     code_blocks
 

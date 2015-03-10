@@ -22,7 +22,7 @@
 import sys
 import cairo
 import getopt
-import freetype
+import freetype2 as freetype
 FT = freetype.FT
 
 if len(sys.argv) != 5 :

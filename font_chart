@@ -21,7 +21,7 @@ import math
 from itertools import \
     filterfalse
 import cairo
-import freetype
+import freetype2 as freetype
 FT = freetype.FT
 
 from code_blocks import \
