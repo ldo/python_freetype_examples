@@ -18,8 +18,6 @@
 
 import sys
 import math
-from itertools import \
-    filterfalse
 import cairo
 import freetype2 as freetype
 FT = freetype.FT
@@ -65,9 +63,9 @@ for block in code_blocks :
     show_rows = set \
       (
         math.floor(c / nr_cols)
-        for c in filterfalse
+        for c in filter
           (
-            lambda c : show_face.get_char_index(c) == 0, range(block.lo, block.end)
+            lambda c : show_face.get_char_index(c) != 0, range(block.lo, block.end)
           )
       )
     unmapped_glyphs -= set(show_face.get_char_index(c) for c in range(block.lo, block.end))
