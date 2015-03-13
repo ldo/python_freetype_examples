@@ -19,8 +19,6 @@
 #-
 
 import sys
-from itertools import \
-    filterfalse
 import freetype2 as freetype
 from code_blocks import \
     code_blocks
@@ -161,7 +159,7 @@ face = lib.find_face(sys.argv[1])
 sys.stdout.write("font family %s style %s filename %s\n" % (face.family_name, face.style_name, face.filename))
 for block in code_blocks :
     block_len = block.end - block.lo
-    count = len(list(filterfalse(lambda g : g == 0, (face.get_char_index(c) for c in range(block.lo, block.end)))))
+    count = len(list(filter(lambda g : g != 0, (face.get_char_index(c) for c in range(block.lo, block.end)))))
     if count != 0 :
         sys.stdout.write("%%%ds: %%d/%%d\n" % max_block_name_len % (block.name, count, block_len))
     #end if
