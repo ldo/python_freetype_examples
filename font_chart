@@ -188,7 +188,11 @@ if len(show_glyph_rows) != 0 :
         x = 0
         for glyph_code in range(row * nr_cols, (row + 1) * nr_cols) :
             if glyph_code in unmapped_glyphs :
-                show_face.load_glyph(glyph_code, FT.LOAD_DEFAULT)
+                try :
+                    show_face.load_glyph(glyph_code, FT.LOAD_DEFAULT)
+                except freetype.FTException as bad :
+                    sys.stderr.write("bad glyph code %d: %s\n" % (glyph_code, str(bad)))
+                #end try
                 if show_face.glyph.metrics["height"] != 0 : # will be 0 for empty glyph (e.g. space character)
                     show_face.glyph.render_glyph(FT.RENDER_MODE_NORMAL)
                     img = show_face.glyph.bitmap.make_image_surface()
