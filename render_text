@@ -13,6 +13,8 @@
 # This script does very simplistic rendering, without catering for
 # bidirectional ordering or contextual forms.
 #
+# Also requires Qahirah <https://github.com/ldo/qahirah>.
+#
 # Copyright 2015 by Lawrence D'Oliveiro <ldo@geek-central.gen.nz>. This
 # script is licensed CC0
 # <https://creativecommons.org/publicdomain/zero/1.0/>; do with it
@@ -20,10 +22,14 @@
 #-
 
 import sys
-import cairo
 import getopt
-import freetype2 as freetype
-FT = freetype.FT
+import qahirah as qah
+from qahirah import \
+    CAIRO, \
+    Colour, \
+    Glyph
+import freetype2
+FT = freetype2.FT
 
 if len(sys.argv) != 5 :
     raise getopt.GetoptError("usage: %s <text> <fontspec> <textsize> <outfile>" % sys.argv[0])
@@ -31,69 +37,44 @@ if len(sys.argv) != 5 :
 text, fontspec, textsize, outfile = sys.argv[1:5]
 textsize = float(textsize)
 
-lib = freetype.Library()
-face = lib.find_face(fontspec)
+face = qah.get_ft_lib().find_face(fontspec)
 sys.stderr.write("Using font %s %s from %s\n" % (face.family_name, face.style_name, face.filename))
-face.set_char_size(size = textsize, resolution = 90)
+face.set_char_size(size = textsize, resolution = 72)
 width = 0
 max_ascender = 0
 max_descender = 0
 prev_glyph = None
+glyphs = []
 for ch in text :
-    this_glyph = face.get_char_index(ord(ch))
-    face.load_glyph(this_glyph, FT.LOAD_DEFAULT)
+    glyph_index = face.get_char_index(ord(ch))
+    face.load_glyph(glyph_index, FT.LOAD_DEFAULT)
     if prev_glyph != None :
-        kern = face.get_kerning(prev_glyph, this_glyph, FT.KERNING_DEFAULT).x
+        kern = face.get_kerning(prev_glyph, glyph_index, FT.KERNING_DEFAULT).x
     else :
         kern = 0
     #end if
-    width += face.glyph.metrics["horiAdvance"] + kern
+    hori_advance = face.glyph.metrics["horiAdvance"] + kern
+    glyphs.append(Glyph(glyph_index, (width, 0)))
+    width += hori_advance
     max_ascender = max(max_ascender, face.glyph.metrics["horiBearingY"])
     max_descender = max(max_descender, face.glyph.metrics["height"] - face.glyph.metrics["horiBearingY"])
-    # sys.stderr.write("char %d w×h = %.3f×%.3f ascender %.3f kern %.3f\n" % (ord(ch), face.glyph.metrics["horiAdvance"], face.glyph.metrics["height"], face.glyph.metrics["horiBearingY"], kern)) # debug
-    prev_glyph = this_glyph
+    sys.stderr.write("char %d w×h = %g×%g ascender %g bearingx %g kern %g\n" % (ord(ch), face.glyph.metrics["horiAdvance"], face.glyph.metrics["height"], face.glyph.metrics["horiBearingY"], face.glyph.metrics["horiBearingX"], kern)) # debug
+    prev_glyph = glyph_index
 #end for
 height = max_ascender + max_descender
-sys.stderr.write("bitmap dimensions w×h = %.1f×%.1f\n" % (width, height)) # debug
-pix = cairo.ImageSurface(cairo.FORMAT_ARGB32, round(width), round(height))
-g = cairo.Context(pix)
-if False :
-    m = cairo.Matrix()
-    m.translate(0, height / 2)
-    m.scale(1, -1)
-    m.translate(0, - height / 2)
-    g.transform(m)
-#end if
-g.set_source_rgba(1, 1, 1, 1)
-g.set_operator(cairo.OPERATOR_SOURCE)
-g.paint()
-g.set_source_rgba(0, 0, 0, 1)
-pos = 0
-prev_glyph = None
-for ch in text :
-    this_glyph = face.get_char_index(ord(ch))
-    face.load_glyph(this_glyph, FT.LOAD_DEFAULT)
-    face.glyph.render_glyph(FT.RENDER_MODE_NORMAL)
-    if prev_glyph != None :
-        kern = face.get_kerning(prev_glyph, this_glyph, FT.KERNING_DEFAULT).x
-    else :
-        kern = 0
-    #end if
-    if True :
-        if face.glyph.metrics["height"] != 0 : # will be 0 for empty glyph (e.g. space character)
-            img = face.glyph.bitmap.make_image_surface()
-            g.mask_surface(img, pos, max_ascender - face.glyph.metrics["horiBearingY"])
-        #end if
-    else :
-        # debug
-        g.new_path()
-        sys.stderr.write("glyph bounds %.3f,0:%.3f,%.3f\n" % (pos, face.glyph.metrics["horiAdvance"], face.glyph.metrics["height"])) # debug
-        g.rectangle(pos, 0, face.glyph.metrics["horiAdvance"], face.glyph.metrics["height"])
-        g.fill()
-    #end if
-    pos += face.glyph.metrics["horiAdvance"] + kern
-    prev_glyph = this_glyph
-#end for
-pix.flush()
-pix.write_to_png(outfile)
+sys.stderr.write("bitmap dimensions w×h = %g×%g\n" % (width, height)) # debug
+sys.stderr.write("glyphs = %s\n" % repr(glyphs)) # debug
+
+pix = qah.ImageSurface.create(CAIRO.FORMAT_RGB24, (round(width), round(height)))
+(qah.Context.create(pix)
+    .set_source_colour(Colour.grey(1))
+    .set_operator(CAIRO.OPERATOR_SOURCE)
+    .paint()
+    .set_source_colour(Colour.grey(0))
+    .set_font_face(qah.FontFace.create_for_ft_face(face))
+    .set_font_size(textsize)
+    .translate((0, max_ascender))
+    .show_glyphs(glyphs)
+)
+pix.flush().write_to_png(outfile)
 sys.stderr.write("image written to %s\n" % outfile) # debug

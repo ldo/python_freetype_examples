@@ -10,6 +10,8 @@
 # font to use, and <outfile> is the name to give to the output PNG
 # file containing the generated chart.
 #
+# Also requires Qahirah <https://github.com/ldo/qahirah>.
+#
 # Copyright 2015 by Lawrence D'Oliveiro <ldo@geek-central.gen.nz>. This
 # script is licensed CC0
 # <https://creativecommons.org/publicdomain/zero/1.0/>; do with it
@@ -18,12 +20,39 @@
 
 import sys
 import math
-import cairo
+import qahirah as qah
+from qahirah import \
+    CAIRO, \
+    Colour
 import freetype2 as freetype
 FT = freetype.FT
 
 from code_blocks import \
     code_blocks
+
+def make_image_surface(from_bitmap) :
+    if from_bitmap.pixel_mode == FT.PIXEL_MODE_MONO :
+        cairo_format = CAIRO.FORMAT_A1
+    elif from_bitmap.pixel_mode == FT.PIXEL_MODE_GRAY :
+        cairo_format = CAIRO.FORMAT_A8
+    else :
+        raise NotImplementedError("unsupported bitmap format %d" % from_bitmap.pixel_mode)
+    #end if
+    stride = qah.ImageSurface.format_stride_for_width(cairo_format, from_bitmap.width)
+    buf = from_bitmap.to_array(stride)
+    return \
+        qah.ImageSurface.create_for_array \
+          (
+            arr = buf,
+            format = cairo_format,
+            dimensions = (from_bitmap.width, from_bitmap.rows),
+            stride = stride
+          )
+#end make_image_surface
+
+#+
+# Mainline
+#-
 
 if len(sys.argv) != 3 :
     raise RuntimeError("need two args, the Fontconfig pattern string and the output filename")
@@ -49,15 +78,15 @@ show_face.set_char_size(size = textsize, resolution = text_resolution)
 max_show_ascender = show_face.size["metrics"]["ascender"]
 max_show_descender = - show_face.size["metrics"]["descender"]
 max_show_advance = show_face.size["metrics"]["max_advance"]
-pix = cairo.ImageSurface(cairo.FORMAT_A8, 32, 32) # dummy just for getting font metrics
-g = cairo.Context(pix)
-g.select_font_face(label_font_name)
+pix = qah.ImageSurface.create(CAIRO.FORMAT_A8, (0, 0)) # dummy just for getting font metrics
+g = qah.Context.create(pix)
+g.select_font_face(label_font_name, CAIRO.FONT_SLANT_NORMAL, CAIRO.FONT_WEIGHT_NORMAL)
 g.set_font_size(title_size)
-max_title_ascender, max_title_descender, _, _, _ = g.font_extents()
+max_title_ascender, max_title_descender, _, _, _ = g.font_extents
 g.set_font_size(label_large_size)
-max_label_large_ascender, max_label_large_descender, _, _, _ = g.font_extents()
+max_label_large_ascender, max_label_large_descender, _, _, _ = g.font_extents
 g.set_font_size(label_small_size)
-max_label_small_ascender, max_label_small_descender, _, _, _ = g.font_extents()
+max_label_small_ascender, max_label_small_descender, _, _, _ = g.font_extents
 # sys.stderr.write("show ascender = %.3f, descender = %.3f, height = %.3f, max_advance = %.3f\n" % (max_show_ascender, max_show_descender, show_face.size["metrics"]["height"], max_show_advance)) # debug
 
 nr_blocks = 0
@@ -93,43 +122,46 @@ if len(show_glyph_rows) != 0 :
     nr_blocks += 1
 #end if
 
-pix = cairo.ImageSurface \
+pix = qah.ImageSurface.create \
   (
-    cairo.FORMAT_RGB24,
-    round(nr_cols * max_show_advance), # width
-    round
-      (
-            max_title_ascender + max_title_descender
-        +
-            nr_blocks * (max_label_large_ascender + max_label_large_descender)
-        +
-            nr_rows * (max_show_ascender + max_show_descender + max_label_small_ascender + max_label_small_descender)
-      ), # height
+    format = CAIRO.FORMAT_RGB24,
+    dimensions =
+        (
+            round(nr_cols * max_show_advance), # width
+            round
+              (
+                    max_title_ascender + max_title_descender
+                +
+                    nr_blocks * (max_label_large_ascender + max_label_large_descender)
+                +
+                    nr_rows * (max_show_ascender + max_show_descender + max_label_small_ascender + max_label_small_descender)
+              ), # height
+        )
   )
-sys.stderr.write("creating image w×h = %d×%d\n" % (pix.get_width(), pix.get_height())) # debug
-g = cairo.Context(pix)
-g.set_source_rgba(1, 1, 1)
-g.set_operator(cairo.OPERATOR_SOURCE)
+sys.stderr.write("creating image w×h = %d×%d\n" % (pix.width, pix.height)) # debug
+g = qah.Context.create(pix)
+g.source_colour = Colour.grey(1)
+g.set_operator(CAIRO.OPERATOR_SOURCE)
 g.paint()
-g.set_source_rgb(0, 0, 0)
-g.select_font_face(label_font_name)
+g.source_colour = Colour.grey(0)
+g.select_font_face(label_font_name, CAIRO.FONT_SLANT_NORMAL, CAIRO.FONT_WEIGHT_NORMAL)
 g.set_font_size(title_size)
 show_name = "%s %s" % (show_face.family_name, show_face.style_name)
 g.move_to \
-  (
-    (pix.get_width() - g.text_extents(show_name)[2]) / 2, # horizontally centred
+  ((
+    (pix.width - g.text_extents(show_name)[2]) / 2, # horizontally centred
     max_title_ascender
-  )
+  ))
 g.show_text(show_name)
 y = max_title_ascender + max_title_descender
 for block in show_char_blocks :
     y += max_label_large_ascender
     g.set_font_size(label_large_size)
     g.move_to \
-      (
-        (pix.get_width() - g.text_extents(block["name"])[2]) / 2, # horizontally centred
+      ((
+        (pix.width - g.text_extents(block["name"])[2]) / 2, # horizontally centred
         y
-      )
+      ))
     g.show_text(block["name"])
     y += max_label_large_descender
     g.set_font_size(label_small_size)
@@ -150,20 +182,22 @@ for block in show_char_blocks :
                 #end try
                 if show_face.glyph.metrics["height"] != 0 : # will be 0 for empty glyph (e.g. space character)
                     show_face.glyph.render_glyph(FT.RENDER_MODE_NORMAL)
-                    img = show_face.glyph.bitmap.make_image_surface()
+                    img = make_image_surface(show_face.glyph.bitmap)
                     g.mask_surface \
                       (
                         img,
-                        x + (max_show_advance - img.get_width()) / 2,
-                        y - show_face.glyph.metrics["horiBearingY"]
+                          (
+                            x + (max_show_advance - img.width) / 2,
+                            y - show_face.glyph.metrics["horiBearingY"]
+                          )
                       )
                 #end if
                 label = "U+%04X" % code
                 g.move_to \
-                  (
+                  ((
                     x + (max_show_advance - g.text_extents(label)[2]) / 2,
                     y + max_show_descender + max_label_small_ascender
-                  )
+                  ))
                 g.show_text(label)
             #end if
             x += max_show_advance
@@ -176,10 +210,10 @@ if len(show_glyph_rows) != 0 :
     y += max_label_large_ascender
     g.set_font_size(label_large_size)
     g.move_to \
-      (
-        (pix.get_width() - g.text_extents(block_name)[2]) / 2, # horizontally centred
+      ((
+        (pix.width - g.text_extents(block_name)[2]) / 2, # horizontally centred
         y
-      )
+      ))
     g.show_text(block_name)
     y += max_label_large_descender
     g.set_font_size(label_small_size)
@@ -195,20 +229,22 @@ if len(show_glyph_rows) != 0 :
                 #end try
                 if show_face.glyph.metrics["height"] != 0 : # will be 0 for empty glyph (e.g. space character)
                     show_face.glyph.render_glyph(FT.RENDER_MODE_NORMAL)
-                    img = show_face.glyph.bitmap.make_image_surface()
+                    img = make_image_surface(show_face.glyph.bitmap)
                     g.mask_surface \
                       (
                         img,
-                        x + (max_show_advance - img.get_width()) / 2,
-                        y - show_face.glyph.metrics["horiBearingY"]
+                          (
+                            x + (max_show_advance - img.width) / 2,
+                            y - show_face.glyph.metrics["horiBearingY"]
+                          )
                       )
                 #end if
                 label = "%#x" % glyph_code
                 g.move_to \
-                  (
+                  ((
                     x + (max_show_advance - g.text_extents(label)[2]) / 2,
                     y + max_show_descender + max_label_small_ascender
-                  )
+                  ))
                 g.show_text(label)
             #end if
             x += max_show_advance
