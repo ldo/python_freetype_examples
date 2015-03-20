@@ -143,7 +143,11 @@ for block in show_char_blocks :
                 glyph_code = 0
             #end if
             if glyph_code != 0 :
-                show_face.load_glyph(glyph_code, FT.LOAD_DEFAULT)
+                try :
+                    show_face.load_glyph(glyph_code, FT.LOAD_DEFAULT)
+                except freetype.FTException as bad :
+                    sys.stderr.write("bad glyph code %d for char U+%04X: %s\n" % (glyph_code, code, str(bad)))
+                #end try
                 if show_face.glyph.metrics["height"] != 0 : # will be 0 for empty glyph (e.g. space character)
                     show_face.glyph.render_glyph(FT.RENDER_MODE_NORMAL)
                     img = show_face.glyph.bitmap.make_image_surface()
