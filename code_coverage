@@ -153,10 +153,24 @@ class CodeRuns :
 if len(sys.argv) != 2 :
     raise RuntimeError("need one arg, the Fontconfig pattern string")
 #end if
+patternstr = sys.argv[1]
 
 lib = freetype.Library()
-face = lib.find_face(sys.argv[1])
+if patternstr.find("/") >= 0 or patternstr.endswith(".ttf") :
+    # interpret as filename
+    face = lib.new_face(patternstr)
+else :
+    face = lib.find_face(patternstr)
+#end if
 sys.stdout.write("font family %s style %s filename %s\n" % (face.family_name, face.style_name, face.filename))
+sys.stdout.write("charmaps[%d] = " % len(face.charmaps))
+for i, charmap in enumerate(face.charmaps) :
+    if i != 0 :
+        sys.stdout.write(", ")
+    #end if
+    sys.stdout.write("%d:(encoding = %s, platform_id = %d, encoding_id = %d)" % (i, repr(charmap["encoding"]), charmap["platform_id"], charmap["encoding_id"]))
+#end for
+sys.stdout.write("\n")
 for block in code_blocks :
     block_len = block.end - block.lo
     count = len(list(filter(lambda g : g != 0, (face.get_char_index(c) for c in range(block.lo, block.end)))))
