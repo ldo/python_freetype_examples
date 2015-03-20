@@ -38,7 +38,12 @@ label_large_size = textsize * 0.7
 label_small_size = 12
 
 lib = freetype.Library()
-show_face = lib.find_face(patternstr)
+if patternstr.find("/") >= 0 or patternstr.endswith(".ttf") :
+    # interpret as filename
+    show_face = lib.new_face(patternstr)
+else :
+    show_face = lib.find_face(patternstr)
+#end if
 sys.stderr.write("show font family %s style %s filename %s\n" % (show_face.family_name, show_face.style_name, show_face.filename)) # debug
 show_face.set_char_size(size = textsize, resolution = text_resolution)
 max_show_ascender = show_face.size["metrics"]["ascender"]
