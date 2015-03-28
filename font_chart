@@ -78,8 +78,7 @@ show_face.set_char_size(size = textsize, resolution = text_resolution)
 max_show_ascender = show_face.size["metrics"]["ascender"]
 max_show_descender = - show_face.size["metrics"]["descender"]
 max_show_advance = show_face.size["metrics"]["max_advance"]
-pix = qah.ImageSurface.create(CAIRO.FORMAT_A8, (0, 0)) # dummy just for getting font metrics
-g = qah.Context.create(pix)
+g = qah.Context.create_for_dummy()
 g.select_font_face(label_font_name, CAIRO.FONT_SLANT_NORMAL, CAIRO.FONT_WEIGHT_NORMAL)
 g.set_font_size(title_size)
 max_title_ascender, max_title_descender, _, _, _ = g.font_extents
