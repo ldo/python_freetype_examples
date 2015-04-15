@@ -7,10 +7,13 @@ examples are:
 * font_chart -- generate a chart of all characters in a font (also needs Qahirah)
 * render_text -- simple renderer of a line of text (also needs Qahirah)
 
+[“Qahirah”](https://github.com/ldo/qahirah) is my pure-Python binding for
+the Cairo graphics library.
+
 The file code_blocks.py contains some common Unicode definitions
 needed by a couple of the scripts.
 
 See the header comments in each script for more details.
 
 Lawrence D'Oliveiro <ldo@geek-central.gen.nz>
-2015 March 21
+2015 April 15
