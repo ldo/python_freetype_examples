@@ -67,7 +67,7 @@ label_large_size = textsize * 0.7
 label_small_size = 12
 
 lib = freetype.Library()
-if patternstr.find("/") >= 0 or patternstr.endswith(".ttf") :
+if patternstr.find("/") >= 0 or any(patternstr.endswith(suffix) for suffix in (".otf", ".ttf")) :
     # interpret as filename
     show_face = lib.new_face(patternstr)
 else :

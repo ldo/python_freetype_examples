@@ -156,7 +156,7 @@ if len(sys.argv) != 2 :
 patternstr = sys.argv[1]
 
 lib = freetype.Library()
-if patternstr.find("/") >= 0 or patternstr.endswith(".ttf") :
+if patternstr.find("/") >= 0 or any(patternstr.endswith(suffix) for suffix in (".otf", ".ttf")) :
     # interpret as filename
     face = lib.new_face(patternstr)
 else :
