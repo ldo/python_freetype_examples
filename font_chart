@@ -23,7 +23,8 @@ import math
 import qahirah as qah
 from qahirah import \
     CAIRO, \
-    Colour
+    Colour, \
+    Vector
 import freetype2 as freetype
 FT = freetype.FT
 
@@ -31,6 +32,8 @@ from code_blocks import \
     code_blocks
 
 def make_image_surface(from_bitmap) :
+    "copies the contents of a freetype2.Bitmap object into an array and creates and" \
+    " returns a qahirah.ImageSurface object wrapping it."
     if from_bitmap.pixel_mode == FT.PIXEL_MODE_MONO :
         cairo_format = CAIRO.FORMAT_A1
     elif from_bitmap.pixel_mode == FT.PIXEL_MODE_GRAY :
@@ -81,11 +84,14 @@ max_show_advance = show_face.size["metrics"]["max_advance"]
 g = qah.Context.create_for_dummy()
 g.select_font_face(label_font_name, CAIRO.FONT_SLANT_NORMAL, CAIRO.FONT_WEIGHT_NORMAL)
 g.set_font_size(title_size)
-max_title_ascender, max_title_descender, _, _, _ = g.font_extents
+max_title_ascender = g.font_extents.ascent
+max_title_descender = g.font_extents.descent
 g.set_font_size(label_large_size)
-max_label_large_ascender, max_label_large_descender, _, _, _ = g.font_extents
+max_label_large_ascender = g.font_extents.ascent
+max_label_large_descender = g.font_extents.descent
 g.set_font_size(label_small_size)
-max_label_small_ascender, max_label_small_descender, _, _, _ = g.font_extents
+max_label_small_ascender = g.font_extents.ascent
+max_label_small_descender = g.font_extents.descent
 # sys.stderr.write("show ascender = %.3f, descender = %.3f, height = %.3f, max_advance = %.3f\n" % (max_show_ascender, max_show_descender, show_face.size["metrics"]["height"], max_show_advance)) # debug
 
 nr_blocks = 0
@@ -125,22 +131,34 @@ pix = qah.ImageSurface.create \
   (
     format = CAIRO.FORMAT_RGB24,
     dimensions =
-        (
-            round(nr_cols * max_show_advance), # width
-            round
+        round
+          (
+            Vector
               (
-                    max_title_ascender + max_title_descender
-                +
-                    nr_blocks * (max_label_large_ascender + max_label_large_descender)
-                +
-                    nr_rows * (max_show_ascender + max_show_descender + max_label_small_ascender + max_label_small_descender)
-              ), # height
-        )
+                x = nr_cols * max_show_advance,
+                y =
+                        max_title_ascender + max_title_descender
+                    +
+                        nr_blocks * (max_label_large_ascender + max_label_large_descender)
+                    +
+                            nr_rows
+                        *
+                            (
+                                max_show_ascender
+                            +
+                                max_show_descender
+                            +
+                                max_label_small_ascender
+                            +
+                                max_label_small_descender
+                            )
+              )
+          )
   )
 sys.stderr.write("creating image w×h = %d×%d\n" % (pix.width, pix.height)) # debug
 g = qah.Context.create(pix)
 g.source_colour = Colour.grey(1)
-g.set_operator(CAIRO.OPERATOR_SOURCE)
+g.operator = CAIRO.OPERATOR_SOURCE
 g.paint()
 g.source_colour = Colour.grey(0)
 g.select_font_face(label_font_name, CAIRO.FONT_SLANT_NORMAL, CAIRO.FONT_WEIGHT_NORMAL)
@@ -184,7 +202,8 @@ for block in show_char_blocks :
                     img = make_image_surface(show_face.glyph.bitmap)
                     g.mask_surface \
                       (
-                        img,
+                        surface = img,
+                        origin =
                           (
                             x + (max_show_advance - img.width) / 2,
                             y - show_face.glyph.metrics["horiBearingY"]
@@ -231,7 +250,8 @@ if len(show_glyph_rows) != 0 :
                     img = make_image_surface(show_face.glyph.bitmap)
                     g.mask_surface \
                       (
-                        img,
+                        surface = img,
+                        origin =
                           (
                             x + (max_show_advance - img.width) / 2,
                             y - show_face.glyph.metrics["horiBearingY"]
