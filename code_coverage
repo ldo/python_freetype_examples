@@ -173,7 +173,7 @@ for i, charmap in enumerate(face.charmaps) :
 sys.stdout.write("\n")
 for block in code_blocks :
     block_len = block.end - block.lo
-    count = len(list(filter(lambda g : g != 0, (face.get_char_index(c) for c in range(block.lo, block.end)))))
+    count = len(list(filter(lambda g : g != 0, (face.get_char_index(c) for c in block.range))))
     if count != 0 :
         sys.stdout.write("%%%ds: %%d/%%d\n" % max_block_name_len % (block.name, count, block_len))
     #end if

@@ -20,6 +20,13 @@ class CodeBlock :
         self.end = hi + 1
     #end __init__
 
+    @property
+    def range(self) :
+        "returns a range object covering the code range."
+        return \
+            range(self.lo, self.end)
+    #end range
+
 #end CodeBlock
 
 code_blocks = \

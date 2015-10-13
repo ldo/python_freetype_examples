@@ -104,10 +104,10 @@ for block in code_blocks :
         math.floor(c / nr_cols)
         for c in filter
           (
-            lambda c : show_face.get_char_index(c) != 0, range(block.lo, block.end)
+            lambda c : show_face.get_char_index(c) != 0, block.range
           )
       )
-    unmapped_glyphs -= set(show_face.get_char_index(c) for c in range(block.lo, block.end))
+    unmapped_glyphs -= set(show_face.get_char_index(c) for c in block.range)
     if len(show_rows) != 0 :
         nr_blocks += 1
         show_block = \
