@@ -39,7 +39,7 @@ textsize = float(textsize)
 
 face = qah.get_ft_lib().find_face(fontspec)
 sys.stderr.write("Using font %s %s from %s\n" % (face.family_name, face.style_name, face.filename))
-face.set_char_size(size = textsize, resolution = 72)
+face.set_char_size(size = textsize, resolution = qah.base_dpi)
 width = 0
 max_ascender = 0
 max_descender = 0
