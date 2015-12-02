@@ -4,11 +4,13 @@ will need to have that installed before you can run these. The
 examples are:
 
 * code_coverage -- show the character code coverage of a font
-* font_chart -- generate a chart of all characters in a font (also needs Qahirah)
-* render_text -- simple renderer of a line of text (also needs Qahirah)
+* font_chart -- generate a chart of all characters in a font
+* mm_demo -- a demonstration of Multiple Masters fonts
+* render_text -- simple renderer of a line of text
 
-[“Qahirah”](https://github.com/ldo/qahirah) is my pure-Python binding for
-the Cairo graphics library.
+All except the first one need
+[“Qahirah”](https://github.com/ldo/qahirah) to be installed; this is
+my pure-Python binding for the Cairo graphics library.
 
 The file code_blocks.py contains some common Unicode definitions
 needed by a couple of the scripts.
@@ -19,4 +21,4 @@ You can see examples of graphical output on my [DeviantArt
 account](http://default-cube.deviantart.com/gallery/56395641/Python-FreeType-Examples).
 
 Lawrence D'Oliveiro <ldo@geek-central.gen.nz>
-2015 October 14
+2015 December 2
