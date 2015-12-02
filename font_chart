@@ -62,7 +62,6 @@ if len(sys.argv) != 3 :
 #end if
 patternstr, outfilename = sys.argv[1:]
 textsize = 48 # maybe make this user-specifiable later
-text_resolution = 90
 nr_cols = 32
 label_font_name = "serif" # something acceptable to toy font face API only for now
 title_size = textsize
@@ -77,7 +76,7 @@ else :
     show_face = lib.find_face(patternstr)
 #end if
 sys.stderr.write("show font family %s style %s filename %s\n" % (show_face.family_name, show_face.style_name, show_face.filename)) # debug
-show_face.set_char_size(size = textsize, resolution = text_resolution)
+show_face.set_char_size(size = textsize, resolution = freetype.base_dpi)
 max_show_ascender = show_face.size["metrics"]["ascender"]
 max_show_descender = - show_face.size["metrics"]["descender"]
 max_show_advance = show_face.size["metrics"]["max_advance"]
