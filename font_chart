@@ -29,6 +29,7 @@ import freetype2 as freetype
 FT = freetype.FT
 
 from code_blocks import \
+    CodeBlock, \
     code_blocks
 
 def make_image_surface(from_bitmap) :
@@ -97,28 +98,38 @@ nr_blocks = 0
 nr_rows = 0
 show_char_blocks = []
 unmapped_glyphs = set(range(1, show_face.num_glyphs)) # always ignore glyph 0
-for block in code_blocks :
-    show_rows = set \
-      (
-        math.floor(c / nr_cols)
-        for c in filter
-          (
-            lambda c : show_face.get_char_index(c) != 0, block.range
-          )
-      )
-    unmapped_glyphs -= set(show_face.get_char_index(c) for c in block.range)
-    if len(show_rows) != 0 :
-        nr_blocks += 1
-        show_block = \
-            {
-                "name" : block.name,
-                "rows" : sorted(show_rows),
-                "lo" : block.lo,
-                "end" : block.end,
-            }
-        nr_rows += len(show_rows)
-        show_char_blocks.append(show_block)
+last_end = 0
+for code_block in code_blocks :
+    if code_block.lo > last_end :
+        check_blocks = [CodeBlock("Unassigned U+%X..U+%X" % (last_end, code_block.lo - 1), last_end, code_block.lo - 1), code_block]
+          # make up an additional code block for the gap
+    else :
+        check_blocks = [code_block]
     #end if
+    last_end = code_block.end
+    for block in check_blocks :
+        show_rows = set \
+          (
+            math.floor(c / nr_cols)
+            for c in filter
+              (
+                lambda c : show_face.get_char_index(c) != 0, block.range
+              )
+          )
+        unmapped_glyphs -= set(show_face.get_char_index(c) for c in block.range)
+        if len(show_rows) != 0 :
+            nr_blocks += 1
+            show_block = \
+                {
+                    "name" : block.name,
+                    "rows" : sorted(show_rows),
+                    "lo" : block.lo,
+                    "end" : block.end,
+                }
+            nr_rows += len(show_rows)
+            show_char_blocks.append(show_block)
+        #end if
+    #end for
 #end for
 show_glyph_rows = list(sorted(set(math.floor(c / nr_cols) for c in unmapped_glyphs)))
 if len(show_glyph_rows) != 0 :
