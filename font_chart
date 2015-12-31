@@ -137,35 +137,36 @@ if len(show_glyph_rows) != 0 :
     nr_blocks += 1
 #end if
 
+pix_dimensions = \
+    round \
+      (
+        Vector
+          (
+            x = nr_cols * max_show_advance,
+            y =
+                    max_title_ascender + max_title_descender
+                +
+                    nr_blocks * (max_label_large_ascender + max_label_large_descender)
+                +
+                        nr_rows
+                    *
+                        (
+                            max_show_ascender
+                        +
+                            max_show_descender
+                        +
+                            max_label_small_ascender
+                        +
+                            max_label_small_descender
+                        )
+          )
+      )
+sys.stderr.write("creating image w×h = %d×%d\n" % (pix_dimensions.x, pix_dimensions.y)) # debug
 pix = qah.ImageSurface.create \
   (
     format = CAIRO.FORMAT_RGB24,
-    dimensions =
-        round
-          (
-            Vector
-              (
-                x = nr_cols * max_show_advance,
-                y =
-                        max_title_ascender + max_title_descender
-                    +
-                        nr_blocks * (max_label_large_ascender + max_label_large_descender)
-                    +
-                            nr_rows
-                        *
-                            (
-                                max_show_ascender
-                            +
-                                max_show_descender
-                            +
-                                max_label_small_ascender
-                            +
-                                max_label_small_descender
-                            )
-              )
-          )
+    dimensions = pix_dimensions
   )
-sys.stderr.write("creating image w×h = %d×%d\n" % (pix.width, pix.height)) # debug
 g = qah.Context.create(pix)
 g.source_colour = Colour.grey(1)
 g.operator = CAIRO.OPERATOR_SOURCE
