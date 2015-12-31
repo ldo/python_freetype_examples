@@ -20,6 +20,7 @@
 
 import sys
 import math
+import getopt
 import qahirah as qah
 from qahirah import \
     CAIRO, \
@@ -58,12 +59,25 @@ def make_image_surface(from_bitmap) :
 # Mainline
 #-
 
-if len(sys.argv) != 3 :
+textsize = 48 # default
+nr_cols = 32
+opts, args = getopt.getopt \
+  (
+    sys.argv[1:],
+    "",
+    ["cols=", "size="]
+  )
+for keyword, value in opts :
+    if keyword == "--cols" :
+        nr_cols = int(value)
+    elif keyword == "--size" :
+        textsize = float(value)
+    #end if
+#end for
+if len(args) != 2 :
     raise RuntimeError("need two args, the Fontconfig pattern string and the output filename")
 #end if
-patternstr, outfilename = sys.argv[1:]
-textsize = 48 # maybe make this user-specifiable later
-nr_cols = 32
+patternstr, outfilename = args
 label_font_name = "serif" # something acceptable to toy font face API only for now
 title_size = textsize
 label_large_size = textsize * 0.7
