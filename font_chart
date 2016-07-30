@@ -12,7 +12,7 @@
 #
 # Also requires Qahirah <https://github.com/ldo/qahirah>.
 #
-# Copyright 2015 by Lawrence D'Oliveiro <ldo@geek-central.gen.nz>. This
+# Copyright 2015-2016 by Lawrence D'Oliveiro <ldo@geek-central.gen.nz>. This
 # script is licensed CC0
 # <https://creativecommons.org/publicdomain/zero/1.0/>; do with it
 # what you will.
@@ -61,15 +61,18 @@ def make_image_surface(from_bitmap) :
 
 textsize = 48 # default
 nr_cols = 32
+show_glyph_codes = False
 opts, args = getopt.getopt \
   (
     sys.argv[1:],
     "",
-    ["cols=", "size="]
+    ["cols=", "glyph-codes", "size="]
   )
 for keyword, value in opts :
     if keyword == "--cols" :
         nr_cols = int(value)
+    elif keyword == "--glyph-codes" :
+        show_glyph_codes = True
     elif keyword == "--size" :
         textsize = float(value)
     #end if
@@ -81,7 +84,11 @@ patternstr, outfilename = args
 label_font_name = "serif" # something acceptable to toy font face API only for now
 title_size = textsize
 label_large_size = textsize * 0.7
-label_small_size = textsize / 4
+if show_glyph_codes :
+    label_small_size = textsize / 6
+else :
+    label_small_size = textsize / 4
+#end if
 
 lib = freetype.Library()
 if patternstr.find("/") >= 0 or any(patternstr.endswith(suffix) for suffix in (".otf", ".ttf")) :
@@ -130,6 +137,7 @@ for code_block in code_blocks :
                 lambda c : show_face.get_char_index(c) != 0, block.range
               )
           )
+          # set of row numbers having something to show on them
         unmapped_glyphs -= set(show_face.get_char_index(c) for c in block.range)
         if len(show_rows) != 0 :
             nr_blocks += 1
@@ -235,7 +243,10 @@ for block in show_char_blocks :
                           )
                       )
                 #end if
-                label = "U+%04X" % code
+                label = "U+%0.4X" % code
+                if show_glyph_codes :
+                    label += " => %#0.4x" % glyph_code
+                #end if
                 g.move_to \
                   ((
                     x + (max_show_advance - g.text_extents(label)[2]) / 2,
