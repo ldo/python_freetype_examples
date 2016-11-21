@@ -90,7 +90,7 @@ else :
     label_small_size = textsize / 4
 #end if
 
-lib = freetype.Library()
+lib = qah.get_ft_lib() # might as well use same one
 if patternstr.find("/") >= 0 or any(patternstr.endswith(suffix) for suffix in (".otf", ".ttf")) :
     # interpret as filename
     show_face = lib.new_face(patternstr)
