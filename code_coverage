@@ -155,7 +155,7 @@ if len(sys.argv) != 2 :
 #end if
 patternstr = sys.argv[1]
 
-lib = freetype.Library()
+lib = freetype.get_default_lib()
 if patternstr.find("/") >= 0 or any(patternstr.endswith(suffix) for suffix in (".otf", ".ttf")) :
     # interpret as filename
     face = lib.new_face(patternstr)
