@@ -13,7 +13,7 @@
 # This script does very simplistic rendering, without catering for
 # bidirectional ordering or contextual forms.
 #
-# Also requires Qahirah <https://github.com/ldo/qahirah>.
+# Also requires Qahirah <https://gitlab.com/ldo/qahirah>, <https://github.com/ldo/qahirah>.
 #
 # Copyright 2015 by Lawrence D'Oliveiro <ldo@geek-central.gen.nz>. This
 # script is licensed CC0

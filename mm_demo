@@ -8,7 +8,7 @@
 # where <font_file> is the name of a font with Multiple Masters
 # capability, and <text> is the sample text to display.
 #
-# Also requires Qahirah <https://github.com/ldo/qahirah>.
+# Also requires Qahirah <https://gitlab.com/ldo/qahirah>, <https://github.com/ldo/qahirah>.
 #
 # Copyright 2015 by Lawrence D'Oliveiro <ldo@geek-central.gen.nz>. This
 # script is licensed CC0
