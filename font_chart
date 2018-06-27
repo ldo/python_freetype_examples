@@ -98,7 +98,14 @@ else :
     show_face = lib.find_face(patternstr)
 #end if
 sys.stderr.write("show font family %s style %s filename %s\n" % (show_face.family_name, show_face.style_name, show_face.filename)) # debug
-show_face.set_char_size(size = textsize, resolution = freetype.base_dpi)
+if len(show_face.available_sizes) != 0 :
+    # fixme: quick hack for bitmap fonts
+    sys.stderr.write("available_sizes = %s\n" % repr(show_face.available_sizes)) # debug
+    use_size = show_face.available_sizes[0]
+    show_face.set_pixel_sizes(use_size["x_ppem"], use_size["y_ppem"])
+else :
+    show_face.set_char_size(size = textsize, resolution = freetype.base_dpi)
+#end if
 max_show_ascender = show_face.size["metrics"]["ascender"]
 max_show_descender = - show_face.size["metrics"]["descender"]
 max_show_advance = show_face.size["metrics"]["max_advance"]
