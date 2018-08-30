@@ -15,8 +15,8 @@
 #
 # Also requires Qahirah <https://gitlab.com/ldo/qahirah>, <https://github.com/ldo/qahirah>.
 #
-# Copyright 2015 by Lawrence D'Oliveiro <ldo@geek-central.gen.nz>. This
-# script is licensed CC0
+# Copyright 2015, 2018 by Lawrence D'Oliveiro
+# <ldo@geek-central.gen.nz>. This script is licensed CC0
 # <https://creativecommons.org/publicdomain/zero/1.0/>; do with it
 # what you will.
 #-
