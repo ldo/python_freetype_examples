@@ -53,8 +53,9 @@ for ch in text :
     else :
         kern = 0
     #end if
+    width += kern
     hori_advance = face.glyph.metrics["horiAdvance"]
-    glyphs.append(Glyph(glyph_index, (width + kern, 0)))
+    glyphs.append(Glyph(glyph_index, (width, 0)))
     width += hori_advance
     max_ascender = max(max_ascender, face.glyph.metrics["horiBearingY"])
     max_descender = max(max_descender, face.glyph.metrics["height"] - face.glyph.metrics["horiBearingY"])
