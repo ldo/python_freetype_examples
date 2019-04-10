@@ -1,14 +1,14 @@
 #+
 # Useful Unicode-related stuff
 #
-# Copyright 2015-2016 by Lawrence D'Oliveiro <ldo@geek-central.gen.nz>. This
+# Copyright 2015-2019 by Lawrence D'Oliveiro <ldo@geek-central.gen.nz>. This
 # module is licensed CC0
 # <https://creativecommons.org/publicdomain/zero/1.0/>; do with it
 # what you will.
 #-
 
 #+
-# Data taken from Unicode 9.0.0 spec
+# Data taken from Unicode 12.0.0 spec
 #-
 
 class CodeBlock :
@@ -52,12 +52,13 @@ code_blocks = \
         CodeBlock("NKo", 0x07C0, 0x07FF),
         CodeBlock("Samaritan", 0x0800, 0x083F),
         CodeBlock("Mandaic", 0x0840, 0x085F),
+        CodeBlock("Syriac Supplement", 0x0860, 0x086F),
         CodeBlock("Arabic Extended-A", 0x08A0, 0x08FF),
         CodeBlock("Devanagari", 0x0900, 0x097F),
         CodeBlock("Bengali", 0x0980, 0x09FF),
         CodeBlock("Gurmukhi", 0x0A00, 0x0A7F),
         CodeBlock("Gujarati", 0x0A80, 0x0AFF),
-        CodeBlock("Oriya", 0x0B00, 0x0B7F),
+        CodeBlock("Oriya", 0x0B00, 0x0B7F), # officially “Odiya”
         CodeBlock("Tamil", 0x0B80, 0x0BFF),
         CodeBlock("Telugu", 0x0C00, 0x0C7F),
         CodeBlock("Kannada", 0x0C80, 0x0CFF),
@@ -69,7 +70,7 @@ code_blocks = \
         CodeBlock("Myanmar", 0x1000, 0x109F),
         CodeBlock("Georgian", 0x10A0, 0x10FF),
         CodeBlock("Hangul Jamo", 0x1100, 0x11FF),
-        CodeBlock("Ethiopic", 0x1200, 0x137F),
+        CodeBlock("Ethiopic", 0x1200, 0x137F), # aka “Ge’ez”
         CodeBlock("Ethiopic Supplement", 0x1380, 0x139F),
         CodeBlock("Cherokee", 0x13A0, 0x13FF),
         CodeBlock("Unified Canadian Aboriginal Syllabics", 0x1400, 0x167F),
@@ -86,8 +87,8 @@ code_blocks = \
         CodeBlock("Tai Le", 0x1950, 0x197F),
         CodeBlock("New Tai Lue", 0x1980, 0x19DF),
         CodeBlock("Khmer Symbols", 0x19E0, 0x19FF),
-        CodeBlock("Buginese", 0x1A00, 0x1A1F),
-        CodeBlock("Tai Tham", 0x1A20, 0x1AAF),
+        CodeBlock("Buginese", 0x1A00, 0x1A1F), # aka “Lontara”
+        CodeBlock("Tai Tham", 0x1A20, 0x1AAF), # aka “Tai Tham” or “Old Tai Lue”
         CodeBlock("Combining Diacritical Marks Extended", 0x1AB0, 0x1AFF),
         CodeBlock("Balinese", 0x1B00, 0x1B7F),
         CodeBlock("Sundanese", 0x1B80, 0x1BBF),
@@ -95,6 +96,7 @@ code_blocks = \
         CodeBlock("Lepcha", 0x1C00, 0x1C4F),
         CodeBlock("Ol Chiki", 0x1C50, 0x1C7F),
         CodeBlock("Cyrillic Extended-C", 0x1C80, 0x1C8F),
+        CodeBlock("Georgian Extended", 0x1C90, 0x1CBF),
         CodeBlock("Sundanese Supplement", 0x1CC0, 0x1CCF),
         CodeBlock("Vedic Extensions", 0x1CD0, 0x1CFF),
         CodeBlock("Phonetic Extensions", 0x1D00, 0x1D7F),
@@ -234,7 +236,11 @@ code_blocks = \
         CodeBlock("Psalter Pahlavi", 0x10B80, 0x10BAF),
         CodeBlock("Old Turkic", 0x10C00, 0x10C4F),
         CodeBlock("Old Hungarian", 0x10C80, 0x10CFF),
+        CodeBlock("Hanifi Rohingya", 0x10D00, 0x10D3F),
         CodeBlock("Rumi Numeral Symbols", 0x10E60, 0x10E7F),
+        CodeBlock("Old Sogdian", 0x10F00, 0x10F2F),
+        CodeBlock("Sogdian", 0x10F30, 0x10F6F),
+        CodeBlock("Elymaic", 0x10FE0, 0x10FFF),
         CodeBlock("Brahmi", 0x11000, 0x1107F),
         CodeBlock("Kaithi", 0x11080, 0x110CF),
         CodeBlock("Sora Sompeng", 0x110D0, 0x110FF),
@@ -253,36 +259,54 @@ code_blocks = \
         CodeBlock("Mongolian Supplement", 0x11660, 0x1167F),
         CodeBlock("Takri", 0x11680, 0x116CF),
         CodeBlock("Ahom", 0x11700, 0x1173F),
+        CodeBlock("Dogra", 0x11800, 0x1183F),
         CodeBlock("Warang Citi", 0x118A0, 0x118FF),
+        CodeBlock("Nandinagari", 0x119A0, 0x119FF),
+        CodeBlock("Zanabazar Square", 0x11A00, 0x11A4F),
+        CodeBlock("Soyombo", 0x11A50, 0x11AAF),
         CodeBlock("Pau Cin Hau", 0x11AC0, 0x11AFF),
         CodeBlock("Bhaiksuki", 0x11C00, 0x11C6F),
         CodeBlock("Marchen", 0x11C70, 0x11CBF),
+        CodeBlock("Masaram Gondi", 0x11D00, 0x11D5F),
+        CodeBlock("Gunjala Gondi", 0x11D60, 0x11DAF),
+        CodeBlock("Makasar", 0x11EE0, 0x11EFF),
+        CodeBlock("Tamil Supplement", 0x11FC0, 0x11FFF),
         CodeBlock("Cuneiform", 0x12000, 0x123FF),
         CodeBlock("Cuneiform Numbers and Punctuation", 0x12400, 0x1247F),
         CodeBlock("Early Dynastic Cuneiform", 0x12480, 0x1254F),
         CodeBlock("Egyptian Hieroglyphs", 0x13000, 0x1342F),
+        CodeBlock("Egyptian Hieroglyph Format Controls", 0x13430, 0x1343F),
         CodeBlock("Anatolian Hieroglyphs", 0x14400, 0x1467F),
         CodeBlock("Bamum Supplement", 0x16800, 0x16A3F),
         CodeBlock("Mro", 0x16A40, 0x16A6F),
         CodeBlock("Bassa Vah", 0x16AD0, 0x16AFF),
         CodeBlock("Pahawh Hmong", 0x16B00, 0x16B8F),
+        CodeBlock("Medefaidrin", 0x16E40, 0x16E9F),
         CodeBlock("Miao", 0x16F00, 0x16F9F),
         CodeBlock("Ideographic Symbols and Punctuation", 0x16FE0, 0x16FFF),
         CodeBlock("Tangut", 0x17000, 0x187EC),
         CodeBlock("Tangut Components", 0x18800, 0x18AFF),
         CodeBlock("Kana Supplement", 0x1B000, 0x1B0FF),
+        CodeBlock("Kana Extended-A", 0x1B100, 0x1B12F),
+        CodeBlock("Small Kana Extension", 0x1B130, 0x1B16F),
+        CodeBlock("Nushu", 0x1B170, 0x1B2FF),
         CodeBlock("Duployan", 0x1BC00, 0x1BC9F),
         CodeBlock("Shorthand Format Controls", 0x1BCA0, 0x1BCAF),
         CodeBlock("Byzantine Musical Symbols", 0x1D000, 0x1D0FF),
         CodeBlock("Musical Symbols", 0x1D100, 0x1D1FF),
         CodeBlock("Ancient Greek Musical Notation", 0x1D200, 0x1D24F),
+        CodeBlock("Mayan Numerals", 0x1D2E0, 0x1D2FF),
         CodeBlock("Tai Xuan Jing Symbols", 0x1D300, 0x1D35F),
         CodeBlock("Counting Rod Numerals", 0x1D360, 0x1D37F),
         CodeBlock("Mathematical Alphanumeric Symbols", 0x1D400, 0x1D7FF),
         CodeBlock("Sutton SignWriting", 0x1D800, 0x1DAAF),
         CodeBlock("Glagolitic Supplement", 0x1E000, 0x1E02F),
+        CodeBlock("Nyiakeng Puachue Hmong", 0x1E100, 0x1E14F),
+        CodeBlock("Wancho", 0x1E2C0, 0x1E2FF),
         CodeBlock("Mende Kikakui", 0x1E800, 0x1E8DF),
         CodeBlock("Adlam", 0x1E900, 0x1E95F),
+        CodeBlock("Indic Siyaq Numbers", 0x1EC70, 0x1ECBF),
+        CodeBlock("Ottoman Siyaq Numbers", 0x1ED00, 0x1ED4F),
         CodeBlock("Arabic Mathematical Alphabetic Symbols", 0x1EE00, 0x1EEFF),
         CodeBlock("Mahjong Tiles", 0x1F000, 0x1F02F),
         CodeBlock("Domino Tiles", 0x1F030, 0x1F09F),
@@ -297,10 +321,14 @@ code_blocks = \
         CodeBlock("Geometric Shapes Extended", 0x1F780, 0x1F7FF),
         CodeBlock("Supplemental Arrows-C", 0x1F800, 0x1F8FF),
         CodeBlock("Supplemental Symbols and Pictographs", 0x1F900, 0x1F9FF),
+        CodeBlock("Chess Symbols", 0x1FA00, 0x1FA6F),
+        CodeBlock("Symbols and Pictographs Extended-A", 0x1FA70, 0x1FAFF),
         CodeBlock("Unassigned", 0x1FF80, 0x1FFFF),
         CodeBlock("CJK Unified Ideographs Extension B", 0x20000, 0x2A6D6),
         CodeBlock("CJK Unified Ideographs Extension C", 0x2A700, 0x2B734),
         CodeBlock("CJK Unified Ideographs Extension D", 0x2B740, 0x2B81D),
+        CodeBlock("CJK Unified Ideographs Extension E", 0x2B820, 0x2CEA1),
+        CodeBlock("CJK Unified Ideographs Extension F", 0x2CEB0, 0x2EBE0),
         CodeBlock("CJK Compatibility Ideographs Supplement", 0x2F800, 0x2FA1F),
         CodeBlock("Unassigned", 0x2FF80, 0x2FFFF),
         CodeBlock("Unassigned", 0x3FF80, 0x3FFFF),
