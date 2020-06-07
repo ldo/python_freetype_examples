@@ -1,14 +1,14 @@
 #+
 # Useful Unicode-related stuff
 #
-# Copyright 2015-2019 by Lawrence D'Oliveiro <ldo@geek-central.gen.nz>. This
+# Copyright 2015-2020 by Lawrence D'Oliveiro <ldo@geek-central.gen.nz>. This
 # module is licensed CC0
 # <https://creativecommons.org/publicdomain/zero/1.0/>; do with it
 # what you will.
 #-
 
 #+
-# Data taken from Unicode 12.0.0 spec
+# Data taken from Unicode 13.0.0 spec
 #-
 
 class CodeBlock :
@@ -150,9 +150,9 @@ code_blocks = \
         CodeBlock("Katakana Phonetic Extensions", 0x31F0, 0x31FF),
         CodeBlock("Enclosed CJK Letters and Months", 0x3200, 0x32FF),
         CodeBlock("CJK Compatibility", 0x3300, 0x33FF),
-        CodeBlock("CJK Unified Ideographs Extension A", 0x3400, 0x4DB5),
+        CodeBlock("CJK Unified Ideographs Extension A", 0x3400, 0x4DBF),
         CodeBlock("Yijing Hexagram Symbols", 0x4DC0, 0x4DFF),
-        CodeBlock("CJK Unified Ideographs", 0x4E00, 0x9FCC),
+        CodeBlock("CJK Unified Ideographs", 0x4E00, 0x9FFC),
         CodeBlock("Yi Syllables", 0xA000, 0xA48F),
         CodeBlock("Yi Radicals", 0xA490, 0xA4CF),
         CodeBlock("Lisu", 0xA4D0, 0xA4FF),
@@ -238,8 +238,10 @@ code_blocks = \
         CodeBlock("Old Hungarian", 0x10C80, 0x10CFF),
         CodeBlock("Hanifi Rohingya", 0x10D00, 0x10D3F),
         CodeBlock("Rumi Numeral Symbols", 0x10E60, 0x10E7F),
+        CodeBlock("Yezidi", 0x10E80, 0x10EBF),
         CodeBlock("Old Sogdian", 0x10F00, 0x10F2F),
         CodeBlock("Sogdian", 0x10F30, 0x10F6F),
+        CodeBlock("Chorasmian", 0x10FB0, 0x10FDF),
         CodeBlock("Elymaic", 0x10FE0, 0x10FFF),
         CodeBlock("Brahmi", 0x11000, 0x1107F),
         CodeBlock("Kaithi", 0x11080, 0x110CF),
@@ -261,6 +263,7 @@ code_blocks = \
         CodeBlock("Ahom", 0x11700, 0x1173F),
         CodeBlock("Dogra", 0x11800, 0x1183F),
         CodeBlock("Warang Citi", 0x118A0, 0x118FF),
+        CodeBlock("Dives Akuru", 0x11900, 0x1195F),
         CodeBlock("Nandinagari", 0x119A0, 0x119FF),
         CodeBlock("Zanabazar Square", 0x11A00, 0x11A4F),
         CodeBlock("Soyombo", 0x11A50, 0x11AAF),
@@ -270,6 +273,7 @@ code_blocks = \
         CodeBlock("Masaram Gondi", 0x11D00, 0x11D5F),
         CodeBlock("Gunjala Gondi", 0x11D60, 0x11DAF),
         CodeBlock("Makasar", 0x11EE0, 0x11EFF),
+        CodeBlock("Lisu Supplement", 0x11FB0, 0x11FBF),
         CodeBlock("Tamil Supplement", 0x11FC0, 0x11FFF),
         CodeBlock("Cuneiform", 0x12000, 0x123FF),
         CodeBlock("Cuneiform Numbers and Punctuation", 0x12400, 0x1247F),
@@ -286,6 +290,8 @@ code_blocks = \
         CodeBlock("Ideographic Symbols and Punctuation", 0x16FE0, 0x16FFF),
         CodeBlock("Tangut", 0x17000, 0x187EC),
         CodeBlock("Tangut Components", 0x18800, 0x18AFF),
+        CodeBlock("Khitan Small Script", 0x18B00, 0x18CFF),
+        CodeBlock("Tangut Supplement", 0x18D00, 0x18D08),
         CodeBlock("Kana Supplement", 0x1B000, 0x1B0FF),
         CodeBlock("Kana Extended-A", 0x1B100, 0x1B12F),
         CodeBlock("Small Kana Extension", 0x1B130, 0x1B16F),
@@ -323,14 +329,16 @@ code_blocks = \
         CodeBlock("Supplemental Symbols and Pictographs", 0x1F900, 0x1F9FF),
         CodeBlock("Chess Symbols", 0x1FA00, 0x1FA6F),
         CodeBlock("Symbols and Pictographs Extended-A", 0x1FA70, 0x1FAFF),
+        CodeBlock("Symbols for Legacy Computing", 0x1FB00, 0x1FBFF),
         CodeBlock("Unassigned", 0x1FF80, 0x1FFFF),
-        CodeBlock("CJK Unified Ideographs Extension B", 0x20000, 0x2A6D6),
+        CodeBlock("CJK Unified Ideographs Extension B", 0x20000, 0x2A6DD),
         CodeBlock("CJK Unified Ideographs Extension C", 0x2A700, 0x2B734),
         CodeBlock("CJK Unified Ideographs Extension D", 0x2B740, 0x2B81D),
         CodeBlock("CJK Unified Ideographs Extension E", 0x2B820, 0x2CEA1),
         CodeBlock("CJK Unified Ideographs Extension F", 0x2CEB0, 0x2EBE0),
         CodeBlock("CJK Compatibility Ideographs Supplement", 0x2F800, 0x2FA1F),
         CodeBlock("Unassigned", 0x2FF80, 0x2FFFF),
+        CodeBlock("CJK Unified Ideographs Extension G", 0x30000, 0x3134A),
         CodeBlock("Unassigned", 0x3FF80, 0x3FFFF),
         CodeBlock("Unassigned", 0x4FF80, 0x4FFFF),
         CodeBlock("Unassigned", 0x5FF80, 0x5FFFF),
