@@ -4,15 +4,17 @@
 # and corresponding character codes, encoded by a specified font.
 # Invoke this script as follows:
 #
-#     font_chart <fontspec> <outfile>
+#     font_chart «fontspec» «outfile»
 #
-# where <fontspec> is the Fontconfig pattern string identifying the
-# font to use, and <outfile> is the name to give to the output PNG
-# file containing the generated chart.
+# where «fontspec» is the Fontconfig pattern string identifying the
+# font to use, and «outfile» is the name to give to the output file
+# containing the generated chart. The output can be PNG, with the
+# whole chart on one page, or it can be PDF or PostScript, with
+# each Unicode block on a separate page.
 #
 # Also requires Qahirah <https://github.com/ldo/qahirah>.
 #
-# Copyright 2015-2016 by Lawrence D'Oliveiro <ldo@geek-central.gen.nz>. This
+# Copyright 2015-2020 by Lawrence D'Oliveiro <ldo@geek-central.gen.nz>. This
 # script is licensed CC0
 # <https://creativecommons.org/publicdomain/zero/1.0/>; do with it
 # what you will.
@@ -28,6 +30,7 @@ from qahirah import \
     Vector
 import freetype2 as freetype
 FT = freetype.FT
+ft = qah.get_ft_lib() # might as well use same one
 
 from code_blocks import \
     CodeBlock, \
@@ -78,24 +81,27 @@ for keyword, value in opts :
     #end if
 #end for
 if len(args) != 2 :
-    raise RuntimeError("need two args, the Fontconfig pattern string and the output filename")
+    raise getopt.GetoptError("need two args, the Fontconfig pattern string and the output filename")
 #end if
 patternstr, outfilename = args
-label_font_name = "serif" # something acceptable to toy font face API only for now
-title_size = textsize
-label_large_size = textsize * 0.7
-if show_glyph_codes :
-    label_small_size = textsize / 6
+
+if outfilename.endswith(".png") :
+    multipage = False
+elif outfilename.endswith(".pdf") :
+    multipage = True
+    MPSurface = qah.PDFSurface
+elif outfilename.endswith(".ps") :
+    multipage = True
+    MPSurface = qah.PSSurface
 else :
-    label_small_size = textsize / 4
+    raise getopt.GetoptError("output filename must end in .png, .pdf or .ps")
 #end if
 
-lib = qah.get_ft_lib() # might as well use same one
 if patternstr.find("/") >= 0 or any(patternstr.endswith(suffix) for suffix in (".otf", ".ttf")) :
     # interpret as filename
-    show_face = lib.new_face(patternstr)
+    show_face = ft.new_face(patternstr)
 else :
-    show_face = lib.find_face(patternstr)
+    show_face = ft.find_face(patternstr)
 #end if
 sys.stderr.write("show font family %s style %s filename %s\n" % (show_face.family_name, show_face.style_name, show_face.filename)) # debug
 if len(show_face.available_sizes) != 0 :
@@ -109,6 +115,16 @@ else :
 max_show_ascender = show_face.size["metrics"]["ascender"]
 max_show_descender = - show_face.size["metrics"]["descender"]
 max_show_advance = show_face.size["metrics"]["max_advance"]
+
+# get layout parameters for labels
+label_font_name = "serif" # something acceptable to toy font face API only for now
+title_size = textsize
+label_large_size = textsize * 0.7
+if show_glyph_codes :
+    label_small_size = textsize / 6
+else :
+    label_small_size = textsize / 4
+#end if
 g = qah.Context.create_for_dummy()
 g.select_font_face(label_font_name, CAIRO.FONT_SLANT_NORMAL, CAIRO.FONT_WEIGHT_NORMAL)
 g.set_font_size(title_size)
@@ -166,57 +182,80 @@ if len(show_glyph_rows) != 0 :
     nr_blocks += 1
 #end if
 
-pix_dimensions = \
-    round \
-      (
-        Vector
+chart_width = nr_cols * max_show_advance
+chart_title_height = max_title_ascender + max_title_descender
+chart_block_title_height = max_label_large_ascender + max_label_large_descender
+chart_row_height = \
+    max_show_ascender + max_show_descender + max_label_small_ascender + max_label_small_descender
+
+if multipage :
+    pix = MPSurface.create(outfilename, (0, 0))
+else :
+    pix_dimensions = \
+        round \
           (
-            x = nr_cols * max_show_advance,
-            y =
-                    max_title_ascender + max_title_descender
-                +
-                    nr_blocks * (max_label_large_ascender + max_label_large_descender)
-                +
-                        nr_rows
-                    *
-                        (
-                            max_show_ascender
-                        +
-                            max_show_descender
-                        +
-                            max_label_small_ascender
-                        +
-                            max_label_small_descender
-                        )
+            Vector
+              (
+                x = chart_width,
+                y =
+                        chart_title_height
+                    +
+                        nr_blocks * chart_block_title_height
+                    +
+                        nr_rows * chart_row_height
+              )
           )
+    sys.stderr.write("creating image w×h = %d×%d\n" % (pix_dimensions.x, pix_dimensions.y)) # debug
+    pix = qah.ImageSurface.create \
+      (
+        format = CAIRO.FORMAT_RGB24,
+        dimensions = pix_dimensions
       )
-sys.stderr.write("creating image w×h = %d×%d\n" % (pix_dimensions.x, pix_dimensions.y)) # debug
-pix = qah.ImageSurface.create \
-  (
-    format = CAIRO.FORMAT_RGB24,
-    dimensions = pix_dimensions
-  )
-g = qah.Context.create(pix)
-g.source_colour = Colour.grey(1)
-g.operator = CAIRO.OPERATOR_SOURCE
-g.paint()
-g.source_colour = Colour.grey(0)
-g.select_font_face(label_font_name, CAIRO.FONT_SLANT_NORMAL, CAIRO.FONT_WEIGHT_NORMAL)
-g.set_font_size(title_size)
-show_name = "%s %s" % (show_face.family_name, show_face.style_name)
-g.move_to \
-  ((
-    (pix.width - g.text_extents(show_name)[2]) / 2, # horizontally centred
-    max_title_ascender
-  ))
-g.show_text(show_name)
-y = max_title_ascender + max_title_descender
+#end if
+
+done_title = False
+g = y = None
+def do_title(block) :
+    global done_title, g, y
+    if not done_title :
+        g = qah.Context.create(pix)
+    #end if
+    if multipage :
+        pix.set_size \
+          (
+            Vector
+              (
+                x = chart_width,
+                y = chart_title_height + chart_block_title_height + len(block["rows"]) * chart_row_height
+              )
+          )
+    #end if
+    if multipage or not done_title :
+        g.source_colour = Colour.grey(1)
+        g.operator = CAIRO.OPERATOR_SOURCE
+        g.paint()
+        g.source_colour = Colour.grey(0)
+        g.select_font_face(label_font_name, CAIRO.FONT_SLANT_NORMAL, CAIRO.FONT_WEIGHT_NORMAL)
+        g.set_font_size(title_size)
+        show_name = "%s %s" % (show_face.family_name, show_face.style_name)
+        g.move_to \
+          ((
+            (chart_width - g.text_extents(show_name)[2]) / 2, # horizontally centred
+            max_title_ascender
+          ))
+        g.show_text(show_name)
+        y = max_title_ascender + max_title_descender
+    #end if
+    done_title = True
+#end do_title
+
 for block in show_char_blocks :
+    do_title(block)
     y += max_label_large_ascender
     g.set_font_size(label_large_size)
     g.move_to \
       ((
-        (pix.width - g.text_extents(block["name"])[2]) / 2, # horizontally centred
+        (chart_width - g.text_extents(block["name"])[2]) / 2, # horizontally centred
         y
       ))
     g.show_text(block["name"])
@@ -265,14 +304,18 @@ for block in show_char_blocks :
         #end for
         y += max_show_descender + max_label_small_ascender + max_label_small_descender
     #end for
+    if multipage :
+        pix.show_page()
+    #end if
 #end for
 if len(show_glyph_rows) != 0 :
+    do_title({"rows" : show_glyph_rows})
     block_name = "Unmapped Glyphs"
     y += max_label_large_ascender
     g.set_font_size(label_large_size)
     g.move_to \
       ((
-        (pix.width - g.text_extents(block_name)[2]) / 2, # horizontally centred
+        (chart_width - g.text_extents(block_name)[2]) / 2, # horizontally centred
         y
       ))
     g.show_text(block_name)
@@ -313,9 +356,16 @@ if len(show_glyph_rows) != 0 :
         #end for
         y += max_show_descender + max_label_small_ascender + max_label_small_descender
     #end for
+    if multipage :
+        pix.show_page()
+    #end if
 #end if
 pix.flush()
-sys.stderr.write("saving to %s..." % outfilename)
-sys.stderr.flush()
-pix.write_to_png(outfilename)
+if multipage :
+    g = pix = None # no explicit flush call!
+else :
+    sys.stderr.write("saving to %s..." % outfilename)
+    sys.stderr.flush()
+    pix.write_to_png(outfilename)
+#end if
 sys.stderr.write("done.\n")
