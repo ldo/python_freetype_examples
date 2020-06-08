@@ -62,6 +62,7 @@ def make_image_surface(from_bitmap) :
 # Mainline
 #-
 
+margin = Vector(10, 10)
 textsize = 48 # default
 nr_cols = 32
 show_glyph_codes = False
@@ -194,16 +195,18 @@ else :
     pix_dimensions = \
         round \
           (
-            Vector
-              (
-                x = chart_width,
-                y =
-                        chart_title_height
-                    +
-                        nr_blocks * chart_block_title_height
-                    +
-                        nr_rows * chart_row_height
-              )
+                Vector
+                  (
+                    x = chart_width,
+                    y =
+                            chart_title_height
+                        +
+                            nr_blocks * chart_block_title_height
+                        +
+                            nr_rows * chart_row_height
+                  )
+            +
+                2 * margin
           )
     sys.stderr.write("creating image w×h = %d×%d\n" % (pix_dimensions.x, pix_dimensions.y)) # debug
     pix = qah.ImageSurface.create \
@@ -220,16 +223,24 @@ def begin_page(block) :
     global done_title, g, y
     if not done_title :
         g = qah.Context.create(pix)
+        g.translate(margin)
     #end if
     if multipage :
         pix.set_size \
           (
-            Vector
-              (
-                x = chart_width,
-                y = chart_title_height + chart_block_title_height + len(block["rows"]) * chart_row_height
-              )
-          )
+                Vector
+                  (
+                    x = chart_width,
+                    y =
+                            chart_title_height
+                        +
+                            chart_block_title_height
+                        +
+                            len(block["rows"]) * chart_row_height
+                  )
+            +
+                2 * margin
+           )
     #end if
     if multipage or not done_title :
         g.source_colour = Colour.grey(1)
