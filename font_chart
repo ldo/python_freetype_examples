@@ -215,7 +215,8 @@ else :
 
 done_title = False
 g = y = None
-def do_title(block) :
+
+def begin_page(block) :
     global done_title, g, y
     if not done_title :
         g = qah.Context.create(pix)
@@ -247,10 +248,16 @@ def do_title(block) :
         y = max_title_ascender + max_title_descender
     #end if
     done_title = True
-#end do_title
+#end begin_page
+
+def end_page() :
+    if multipage :
+        pix.show_page()
+    #end if
+#end end_page
 
 for block in show_char_blocks :
-    do_title(block)
+    begin_page(block)
     y += max_label_large_ascender
     g.set_font_size(label_large_size)
     g.move_to \
@@ -304,12 +311,10 @@ for block in show_char_blocks :
         #end for
         y += max_show_descender + max_label_small_ascender + max_label_small_descender
     #end for
-    if multipage :
-        pix.show_page()
-    #end if
+    end_page()
 #end for
 if len(show_glyph_rows) != 0 :
-    do_title({"rows" : show_glyph_rows})
+    begin_page({"rows" : show_glyph_rows})
     block_name = "Unmapped Glyphs"
     y += max_label_large_ascender
     g.set_font_size(label_large_size)
@@ -356,9 +361,7 @@ if len(show_glyph_rows) != 0 :
         #end for
         y += max_show_descender + max_label_small_ascender + max_label_small_descender
     #end for
-    if multipage :
-        pix.show_page()
-    #end if
+    end_page()
 #end if
 pix.flush()
 if multipage :
