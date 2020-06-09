@@ -104,7 +104,7 @@ else :
     raise getopt.GetoptError("output filename must end in .png, .pdf, .ps or .svg")
 #end if
 
-if patternstr.find("/") >= 0 or any(patternstr.endswith(suffix) for suffix in (".otf", ".ttf")) :
+if patternstr.find("/") >= 0 or patternstr.endswith((".otf", ".ttf")) :
     # interpret as filename
     show_face = ft.new_face(patternstr)
 else :
