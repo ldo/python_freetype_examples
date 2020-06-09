@@ -8,8 +8,8 @@
 #
 # where «fontspec» is the Fontconfig pattern string identifying the
 # font to use, and «outfile» is the name to give to the output file
-# containing the generated chart. The output can be PNG, with the
-# whole chart on one page, or it can be PDF or PostScript, with
+# containing the generated chart. The output can be PNG or SVG, with
+# the whole chart on one page, or it can be PDF or PostScript, with
 # each Unicode block on a separate page.
 #
 # Also requires Qahirah <https://github.com/ldo/qahirah>.
@@ -88,14 +88,20 @@ patternstr, outfilename = args
 
 if outfilename.endswith(".png") :
     multipage = False
+    SurfaceClass = None
+elif outfilename.endswith(".svg") :
+    multipage = False
+    SurfaceClass = qah.SVGSurface
+    # actually not a lot of point to this, since Cairo saves the entire
+    # page as a single bitmap
 elif outfilename.endswith(".pdf") :
     multipage = True
-    MPSurface = qah.PDFSurface
+    SurfaceClass = qah.PDFSurface
 elif outfilename.endswith(".ps") :
     multipage = True
-    MPSurface = qah.PSSurface
+    SurfaceClass = qah.PSSurface
 else :
-    raise getopt.GetoptError("output filename must end in .png, .pdf or .ps")
+    raise getopt.GetoptError("output filename must end in .png, .pdf, .ps or .svg")
 #end if
 
 if patternstr.find("/") >= 0 or any(patternstr.endswith(suffix) for suffix in (".otf", ".ttf")) :
@@ -190,7 +196,7 @@ chart_row_height = \
     max_show_ascender + max_show_descender + max_label_small_ascender + max_label_small_descender
 
 if multipage :
-    pix = MPSurface.create(outfilename, (0, 0))
+    pix = SurfaceClass.create(outfilename, (0, 0))
 else :
     pix_dimensions = \
         round \
@@ -209,11 +215,15 @@ else :
                 2 * margin
           )
     sys.stderr.write("creating image w×h = %d×%d\n" % (pix_dimensions.x, pix_dimensions.y)) # debug
-    pix = qah.ImageSurface.create \
-      (
-        format = CAIRO.FORMAT_RGB24,
-        dimensions = pix_dimensions
-      )
+    if SurfaceClass != None :
+        pix = SurfaceClass.create(outfilename, pix_dimensions)
+    else :
+        pix = qah.ImageSurface.create \
+          (
+            format = CAIRO.FORMAT_RGB24,
+            dimensions = pix_dimensions
+          )
+    #end if
 #end if
 
 done_title = False
@@ -375,7 +385,7 @@ if len(show_glyph_rows) != 0 :
     end_page()
 #end if
 pix.flush()
-if multipage :
+if SurfaceClass != None :
     g = pix = None # no explicit flush call!
 else :
     sys.stderr.write("saving to %s..." % outfilename)
