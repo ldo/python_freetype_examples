@@ -14,6 +14,10 @@
 #
 # Also requires Qahirah <https://github.com/ldo/qahirah>.
 #
+# This program can also be given a .zip file, in which case it will
+# temporarily extract it and generate a chart for each font file
+# found within. External program needed for this: unar.
+#
 # Copyright 2015-2020 by Lawrence D'Oliveiro <ldo@geek-central.gen.nz>. This
 # script is licensed CC0
 # <https://creativecommons.org/publicdomain/zero/1.0/>; do with it
@@ -21,7 +25,11 @@
 #-
 
 import sys
+import os
 import math
+import tempfile
+import subprocess
+import shutil
 import getopt
 import qahirah as qah
 from qahirah import \
@@ -57,6 +65,8 @@ def make_image_surface(from_bitmap) :
             stride = stride
           )
 #end make_image_surface
+
+fontfile_extensions = (".otf", ".ttf")
 
 #+
 # Mainline
@@ -104,25 +114,6 @@ else :
     raise getopt.GetoptError("output filename must end in .png, .pdf, .ps or .svg")
 #end if
 
-if patternstr.find("/") >= 0 or patternstr.endswith((".otf", ".ttf")) :
-    # interpret as filename
-    show_face = ft.new_face(patternstr)
-else :
-    show_face = ft.find_face(patternstr)
-#end if
-sys.stderr.write("show font family %s style %s filename %s\n" % (show_face.family_name, show_face.style_name, show_face.filename)) # debug
-if len(show_face.available_sizes) != 0 :
-    # fixme: quick hack for bitmap fonts
-    sys.stderr.write("available_sizes = %s\n" % repr(show_face.available_sizes)) # debug
-    use_size = show_face.available_sizes[0]
-    show_face.set_pixel_sizes(use_size["x_ppem"], use_size["y_ppem"])
-else :
-    show_face.set_char_size(size = textsize, resolution = freetype.base_dpi)
-#end if
-max_show_ascender = show_face.size["metrics"]["ascender"]
-max_show_descender = - show_face.size["metrics"]["descender"]
-max_show_advance = show_face.size["metrics"]["max_advance"]
-
 # get layout parameters for labels
 label_font_name = "serif" # something acceptable to toy font face API only for now
 title_size = textsize
@@ -145,251 +136,319 @@ max_label_small_ascender = g.font_extents.ascent
 max_label_small_descender = g.font_extents.descent
 # sys.stderr.write("show ascender = %.3f, descender = %.3f, height = %.3f, max_advance = %.3f\n" % (max_show_ascender, max_show_descender, show_face.size["metrics"]["height"], max_show_advance)) # debug
 
-nr_blocks = 0
-nr_rows = 0
-show_char_blocks = []
-unmapped_glyphs = set(range(1, show_face.num_glyphs)) # always ignore glyph 0
-last_end = 0
-for code_block in code_blocks :
-    if code_block.lo > last_end :
-        check_blocks = [CodeBlock("Unassigned U+%X..U+%X" % (last_end, code_block.lo - 1), last_end, code_block.lo - 1), code_block]
-          # make up an additional code block for the gap
+def make_chart(patternstr, isfontfile, outfilename) :
+    if isfontfile or patternstr.find("/") >= 0 or patternstr.endswith(fontfile_extensions) :
+        # interpret as filename
+        show_face = ft.new_face(patternstr)
     else :
-        check_blocks = [code_block]
+        show_face = ft.find_face(patternstr)
     #end if
-    last_end = code_block.end
-    for block in check_blocks :
-        show_rows = set \
-          (
-            math.floor(c / nr_cols)
-            for c in filter
-              (
-                lambda c : show_face.get_char_index(c) != 0, block.range
-              )
-          )
-          # set of row numbers having something to show on them
-        unmapped_glyphs -= set(show_face.get_char_index(c) for c in block.range)
-        if len(show_rows) != 0 :
-            nr_blocks += 1
-            show_block = \
-                {
-                    "name" : block.name,
-                    "rows" : sorted(show_rows),
-                    "lo" : block.lo,
-                    "end" : block.end,
-                }
-            nr_rows += len(show_rows)
-            show_char_blocks.append(show_block)
+    sys.stderr.write("show font family %s style %s filename %s\n" % (show_face.family_name, show_face.style_name, show_face.filename)) # debug
+    if len(show_face.available_sizes) != 0 :
+        # fixme: quick hack for bitmap fonts
+        sys.stderr.write("available_sizes = %s\n" % repr(show_face.available_sizes)) # debug
+        use_size = show_face.available_sizes[0]
+        show_face.set_pixel_sizes(use_size["x_ppem"], use_size["y_ppem"])
+    else :
+        show_face.set_char_size(size = textsize, resolution = freetype.base_dpi)
+    #end if
+    max_show_ascender = show_face.size["metrics"]["ascender"]
+    max_show_descender = - show_face.size["metrics"]["descender"]
+    max_show_advance = show_face.size["metrics"]["max_advance"]
+
+    nr_blocks = 0
+    nr_rows = 0
+    show_char_blocks = []
+    unmapped_glyphs = set(range(1, show_face.num_glyphs)) # always ignore glyph 0
+    last_end = 0
+    for code_block in code_blocks :
+        if code_block.lo > last_end :
+            check_blocks = \
+                [
+                    CodeBlock
+                      (
+                        "Unassigned U+%X..U+%X" % (last_end, code_block.lo - 1),
+                        last_end,
+                        code_block.lo - 1
+                      ),
+                    code_block
+                ]
+              # make up an additional code block for the gap
+        else :
+            check_blocks = [code_block]
         #end if
+        last_end = code_block.end
+        for block in check_blocks :
+            show_rows = set \
+              (
+                math.floor(c / nr_cols)
+                for c in filter
+                  (
+                    lambda c : show_face.get_char_index(c) != 0, block.range
+                  )
+              )
+              # set of row numbers having something to show on them
+            unmapped_glyphs -= set(show_face.get_char_index(c) for c in block.range)
+            if len(show_rows) != 0 :
+                nr_blocks += 1
+                show_block = \
+                    {
+                        "name" : block.name,
+                        "rows" : sorted(show_rows),
+                        "lo" : block.lo,
+                        "end" : block.end,
+                    }
+                nr_rows += len(show_rows)
+                show_char_blocks.append(show_block)
+            #end if
+        #end for
     #end for
-#end for
-show_glyph_rows = list(sorted(set(math.floor(c / nr_cols) for c in unmapped_glyphs)))
-if len(show_glyph_rows) != 0 :
-    nr_rows += len(show_glyph_rows)
-    nr_blocks += 1
-#end if
-
-chart_width = nr_cols * max_show_advance
-chart_title_height = max_title_ascender + max_title_descender
-chart_block_title_height = max_label_large_ascender + max_label_large_descender
-chart_row_height = \
-    max_show_ascender + max_show_descender + max_label_small_ascender + max_label_small_descender
-
-if multipage :
-    pix = SurfaceClass.create(outfilename, (0, 0))
-else :
-    pix_dimensions = \
-        round \
-          (
-                Vector
-                  (
-                    x = chart_width,
-                    y =
-                            chart_title_height
-                        +
-                            nr_blocks * chart_block_title_height
-                        +
-                            nr_rows * chart_row_height
-                  )
-            +
-                2 * margin
-          )
-    sys.stderr.write("creating image w×h = %d×%d\n" % (pix_dimensions.x, pix_dimensions.y)) # debug
-    if SurfaceClass != None :
-        pix = SurfaceClass.create(outfilename, pix_dimensions)
-    else :
-        pix = qah.ImageSurface.create \
-          (
-            format = CAIRO.FORMAT_RGB24,
-            dimensions = pix_dimensions
-          )
+    show_glyph_rows = list(sorted(set(math.floor(c / nr_cols) for c in unmapped_glyphs)))
+    if len(show_glyph_rows) != 0 :
+        nr_rows += len(show_glyph_rows)
+        nr_blocks += 1
     #end if
-#end if
 
-done_title = False
-g = y = None
+    chart_width = nr_cols * max_show_advance
+    chart_title_height = max_title_ascender + max_title_descender
+    chart_block_title_height = max_label_large_ascender + max_label_large_descender
+    chart_row_height = \
+        max_show_ascender + max_show_descender + max_label_small_ascender + max_label_small_descender
 
-def begin_page(block) :
-    global done_title, g, y
-    if not done_title :
-        g = qah.Context.create(pix)
-        g.translate(margin)
-    #end if
     if multipage :
-        pix.set_size \
-          (
-                Vector
-                  (
-                    x = chart_width,
-                    y =
-                            chart_title_height
-                        +
-                            chart_block_title_height
-                        +
-                            len(block["rows"]) * chart_row_height
-                  )
-            +
-                2 * margin
-           )
+        pix = SurfaceClass.create(outfilename, (0, 0))
+    else :
+        pix_dimensions = \
+            round \
+              (
+                    Vector
+                      (
+                        x = chart_width,
+                        y =
+                                chart_title_height
+                            +
+                                nr_blocks * chart_block_title_height
+                            +
+                                nr_rows * chart_row_height
+                      )
+                +
+                    2 * margin
+              )
+        sys.stderr.write("creating image w×h = %d×%d\n" % (pix_dimensions.x, pix_dimensions.y)) # debug
+        if SurfaceClass != None :
+            pix = SurfaceClass.create(outfilename, pix_dimensions)
+        else :
+            pix = qah.ImageSurface.create \
+              (
+                format = CAIRO.FORMAT_RGB24,
+                dimensions = pix_dimensions
+              )
+        #end if
     #end if
-    if multipage or not done_title :
-        g.source_colour = Colour.grey(1)
-        g.operator = CAIRO.OPERATOR_SOURCE
-        g.paint()
-        g.source_colour = Colour.grey(0)
-        g.select_font_face(label_font_name, CAIRO.FONT_SLANT_NORMAL, CAIRO.FONT_WEIGHT_NORMAL)
-        g.set_font_size(title_size)
-        show_name = "%s %s" % (show_face.family_name, show_face.style_name)
+
+    done_title = False
+    g = y = None
+
+    def begin_page(block) :
+        nonlocal done_title, g, y
+        if not done_title :
+            g = qah.Context.create(pix)
+            g.translate(margin)
+        #end if
+        if multipage :
+            pix.set_size \
+              (
+                    Vector
+                      (
+                        x = chart_width,
+                        y =
+                                chart_title_height
+                            +
+                                chart_block_title_height
+                            +
+                                len(block["rows"]) * chart_row_height
+                      )
+                +
+                    2 * margin
+               )
+        #end if
+        if multipage or not done_title :
+            g.source_colour = Colour.grey(1)
+            g.operator = CAIRO.OPERATOR_SOURCE
+            g.paint()
+            g.source_colour = Colour.grey(0)
+            g.select_font_face(label_font_name, CAIRO.FONT_SLANT_NORMAL, CAIRO.FONT_WEIGHT_NORMAL)
+            g.set_font_size(title_size)
+            show_name = "%s %s" % (show_face.family_name, show_face.style_name)
+            g.move_to \
+              ((
+                (chart_width - g.text_extents(show_name)[2]) / 2, # horizontally centred
+                max_title_ascender
+              ))
+            g.show_text(show_name)
+            y = max_title_ascender + max_title_descender
+        #end if
+        done_title = True
+    #end begin_page
+
+    def end_page() :
+        if multipage :
+            pix.show_page()
+        #end if
+    #end end_page
+
+    for block in show_char_blocks :
+        begin_page(block)
+        y += max_label_large_ascender
+        g.set_font_size(label_large_size)
         g.move_to \
           ((
-            (chart_width - g.text_extents(show_name)[2]) / 2, # horizontally centred
-            max_title_ascender
+            (chart_width - g.text_extents(block["name"])[2]) / 2, # horizontally centred
+            y
           ))
-        g.show_text(show_name)
-        y = max_title_ascender + max_title_descender
-    #end if
-    done_title = True
-#end begin_page
+        g.show_text(block["name"])
+        y += max_label_large_descender
+        g.set_font_size(label_small_size)
+        for row in block["rows"] :
+            y += max_show_ascender
+            x = 0
+            for code in range(row * nr_cols, (row + 1) * nr_cols) :
+                if code >= block["lo"] and code < block["end"] : # row might span more than one block
+                    glyph_code = show_face.get_char_index(code)
+                else :
+                    glyph_code = 0
+                #end if
+                if glyph_code != 0 :
+                    try :
+                        show_face.load_glyph(glyph_code, FT.LOAD_DEFAULT)
+                    except freetype.FTException as bad :
+                        sys.stderr.write("bad glyph code %d for char U+%04X: %s\n" % (glyph_code, code, str(bad)))
+                    #end try
+                    if show_face.glyph.metrics["height"] != 0 : # will be 0 for empty glyph (e.g. space character)
+                        show_face.glyph.render_glyph(FT.RENDER_MODE_NORMAL)
+                        img = make_image_surface(show_face.glyph.bitmap)
+                        g.mask_surface \
+                          (
+                            surface = img,
+                            origin =
+                              (
+                                x + (max_show_advance - img.width) / 2,
+                                y - show_face.glyph.metrics["horiBearingY"]
+                              )
+                          )
+                    #end if
+                    label = "U+%0.4X" % code
+                    if show_glyph_codes :
+                        label += " => %#0.4x" % glyph_code
+                    #end if
+                    g.move_to \
+                      ((
+                        x + (max_show_advance - g.text_extents(label)[2]) / 2,
+                        y + max_show_descender + max_label_small_ascender
+                      ))
+                    g.show_text(label)
+                #end if
+                x += max_show_advance
+            #end for
+            y += max_show_descender + max_label_small_ascender + max_label_small_descender
+        #end for
+        end_page()
+    #end for
 
-def end_page() :
-    if multipage :
-        pix.show_page()
+    if len(show_glyph_rows) != 0 :
+        begin_page({"rows" : show_glyph_rows})
+        block_name = "Unmapped Glyphs"
+        y += max_label_large_ascender
+        g.set_font_size(label_large_size)
+        g.move_to \
+          ((
+            (chart_width - g.text_extents(block_name)[2]) / 2, # horizontally centred
+            y
+          ))
+        g.show_text(block_name)
+        y += max_label_large_descender
+        g.set_font_size(label_small_size)
+        for row in show_glyph_rows :
+            y += max_show_ascender
+            x = 0
+            for glyph_code in range(row * nr_cols, (row + 1) * nr_cols) :
+                if glyph_code in unmapped_glyphs :
+                    try :
+                        show_face.load_glyph(glyph_code, FT.LOAD_DEFAULT)
+                    except freetype.FTException as bad :
+                        sys.stderr.write("bad glyph code %d: %s\n" % (glyph_code, str(bad)))
+                    #end try
+                    if show_face.glyph.metrics["height"] != 0 : # will be 0 for empty glyph (e.g. space character)
+                        show_face.glyph.render_glyph(FT.RENDER_MODE_NORMAL)
+                        img = make_image_surface(show_face.glyph.bitmap)
+                        g.mask_surface \
+                          (
+                            surface = img,
+                            origin =
+                              (
+                                x + (max_show_advance - img.width) / 2,
+                                y - show_face.glyph.metrics["horiBearingY"]
+                              )
+                          )
+                    #end if
+                    label = "%#x" % glyph_code
+                    g.move_to \
+                      ((
+                        x + (max_show_advance - g.text_extents(label)[2]) / 2,
+                        y + max_show_descender + max_label_small_ascender
+                      ))
+                    g.show_text(label)
+                #end if
+                x += max_show_advance
+            #end for
+            y += max_show_descender + max_label_small_ascender + max_label_small_descender
+        #end for
+        end_page()
     #end if
-#end end_page
 
-for block in show_char_blocks :
-    begin_page(block)
-    y += max_label_large_ascender
-    g.set_font_size(label_large_size)
-    g.move_to \
-      ((
-        (chart_width - g.text_extents(block["name"])[2]) / 2, # horizontally centred
-        y
-      ))
-    g.show_text(block["name"])
-    y += max_label_large_descender
-    g.set_font_size(label_small_size)
-    for row in block["rows"] :
-        y += max_show_ascender
-        x = 0
-        for code in range(row * nr_cols, (row + 1) * nr_cols) :
-            if code >= block["lo"] and code < block["end"] : # row might span more than one block
-                glyph_code = show_face.get_char_index(code)
+    pix.flush()
+    if SurfaceClass != None :
+        g = pix = None # no explicit flush call!
+    else :
+        sys.stderr.write("saving to %s..." % outfilename)
+        sys.stderr.flush()
+        pix.write_to_png(outfilename)
+    #end if
+    sys.stderr.write("done %s => %s\n" % (patternstr, outfilename))
+#end make_chart
+
+if patternstr.endswith(".zip") :
+    temp_dir = tempfile.mkdtemp(prefix = "font_chart-")
+    try :
+        subprocess.check_call \
+          (
+            args = ("unar", "-q", "-D", os.path.abspath(patternstr)),
+              # interesting that “-qD” isn’t accepted...
+            cwd = temp_dir
+          )
+        outbasename, outext = os.path.splitext(outfilename)
+        for item in os.listdir(temp_dir) :
+            if item.endswith(fontfile_extensions) :
+                make_chart \
+                  (
+                    patternstr= os.path.join(temp_dir, item),
+                    isfontfile = True,
+                    outfilename =
+                            "%s%s%s%s"
+                        %
+                            (outbasename, ("", "-")[outbasename != ""], os.path.splitext(item)[0], outext)
+                  )
             else :
-                glyph_code = 0
+                sys.stderr.write("ignore archive member “%s”\n" % item)
             #end if
-            if glyph_code != 0 :
-                try :
-                    show_face.load_glyph(glyph_code, FT.LOAD_DEFAULT)
-                except freetype.FTException as bad :
-                    sys.stderr.write("bad glyph code %d for char U+%04X: %s\n" % (glyph_code, code, str(bad)))
-                #end try
-                if show_face.glyph.metrics["height"] != 0 : # will be 0 for empty glyph (e.g. space character)
-                    show_face.glyph.render_glyph(FT.RENDER_MODE_NORMAL)
-                    img = make_image_surface(show_face.glyph.bitmap)
-                    g.mask_surface \
-                      (
-                        surface = img,
-                        origin =
-                          (
-                            x + (max_show_advance - img.width) / 2,
-                            y - show_face.glyph.metrics["horiBearingY"]
-                          )
-                      )
-                #end if
-                label = "U+%0.4X" % code
-                if show_glyph_codes :
-                    label += " => %#0.4x" % glyph_code
-                #end if
-                g.move_to \
-                  ((
-                    x + (max_show_advance - g.text_extents(label)[2]) / 2,
-                    y + max_show_descender + max_label_small_ascender
-                  ))
-                g.show_text(label)
-            #end if
-            x += max_show_advance
         #end for
-        y += max_show_descender + max_label_small_ascender + max_label_small_descender
-    #end for
-    end_page()
-#end for
-if len(show_glyph_rows) != 0 :
-    begin_page({"rows" : show_glyph_rows})
-    block_name = "Unmapped Glyphs"
-    y += max_label_large_ascender
-    g.set_font_size(label_large_size)
-    g.move_to \
-      ((
-        (chart_width - g.text_extents(block_name)[2]) / 2, # horizontally centred
-        y
-      ))
-    g.show_text(block_name)
-    y += max_label_large_descender
-    g.set_font_size(label_small_size)
-    for row in show_glyph_rows :
-        y += max_show_ascender
-        x = 0
-        for glyph_code in range(row * nr_cols, (row + 1) * nr_cols) :
-            if glyph_code in unmapped_glyphs :
-                try :
-                    show_face.load_glyph(glyph_code, FT.LOAD_DEFAULT)
-                except freetype.FTException as bad :
-                    sys.stderr.write("bad glyph code %d: %s\n" % (glyph_code, str(bad)))
-                #end try
-                if show_face.glyph.metrics["height"] != 0 : # will be 0 for empty glyph (e.g. space character)
-                    show_face.glyph.render_glyph(FT.RENDER_MODE_NORMAL)
-                    img = make_image_surface(show_face.glyph.bitmap)
-                    g.mask_surface \
-                      (
-                        surface = img,
-                        origin =
-                          (
-                            x + (max_show_advance - img.width) / 2,
-                            y - show_face.glyph.metrics["horiBearingY"]
-                          )
-                      )
-                #end if
-                label = "%#x" % glyph_code
-                g.move_to \
-                  ((
-                    x + (max_show_advance - g.text_extents(label)[2]) / 2,
-                    y + max_show_descender + max_label_small_ascender
-                  ))
-                g.show_text(label)
-            #end if
-            x += max_show_advance
-        #end for
-        y += max_show_descender + max_label_small_ascender + max_label_small_descender
-    #end for
-    end_page()
-#end if
-pix.flush()
-if SurfaceClass != None :
-    g = pix = None # no explicit flush call!
+    finally :
+        try :
+            shutil.rmtree(temp_dir)
+        except OSError :
+            pass
+        #end try
+    #end try
 else :
-    sys.stderr.write("saving to %s..." % outfilename)
-    sys.stderr.flush()
-    pix.write_to_png(outfilename)
+    make_chart(patternstr, False, outfilename)
 #end if
-sys.stderr.write("done.\n")
