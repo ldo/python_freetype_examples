@@ -250,6 +250,22 @@ def make_chart(patternstr, isfontfile, outfilename) :
     done_title = False
     g = y = None
 
+    def show_title(title) :
+        # draws text horizontally-centred at the current y-position.
+        # If it is too wide, it will be squashed to fit the chart width.
+        title_width = g.text_extents(title).x_advance
+        if title_width > chart_width :
+            # squash to fit
+            g.font_matrix *= Matrix.scale(Vector(chart_width / title_width, 1.0))
+        #end if
+        g.move_to \
+          ((
+            (chart_width - g.text_extents(title)[2]) / 2, # horizontally centred
+            g.current_point.y
+          ))
+        g.show_text(title)
+    #end show_title
+
     def begin_page(block) :
         nonlocal done_title, g, y
         if not done_title :
@@ -280,18 +296,8 @@ def make_chart(patternstr, isfontfile, outfilename) :
             g.source_colour = Colour.grey(0)
             g.select_font_face(label_font_name, CAIRO.FONT_SLANT_NORMAL, CAIRO.FONT_WEIGHT_NORMAL)
             g.set_font_size(title_size)
-            show_name = "%s %s" % (show_face.family_name, show_face.style_name)
-            title_width = g.text_extents(show_name).x_advance
-            if title_width > chart_width :
-                # squash too-wide title to fit
-                g.font_matrix *= Matrix.scale(Vector(chart_width / title_width, 1.0))
-            #end if
-            g.move_to \
-              ((
-                (chart_width - g.text_extents(show_name)[2]) / 2, # horizontally centred
-                max_title_ascender
-              ))
-            g.show_text(show_name)
+            g.move_to((0, max_title_ascender))
+            show_title("%s %s" % (show_face.family_name, show_face.style_name))
             y = max_title_ascender + max_title_descender
         #end if
         done_title = True
@@ -307,12 +313,8 @@ def make_chart(patternstr, isfontfile, outfilename) :
         begin_page(block)
         y += max_label_large_ascender
         g.set_font_size(label_large_size)
-        g.move_to \
-          ((
-            (chart_width - g.text_extents(block["name"])[2]) / 2, # horizontally centred
-            y
-          ))
-        g.show_text(block["name"])
+        g.move_to((0, y))
+        show_title(block["name"])
         y += max_label_large_descender
         g.set_font_size(label_small_size)
         for row in block["rows"] :
