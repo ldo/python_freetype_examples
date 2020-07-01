@@ -433,21 +433,29 @@ if patternstr.endswith(".zip") :
             cwd = temp_dir
           )
         outbasename, outext = os.path.splitext(outfilename)
-        for item in os.listdir(temp_dir) :
-            if item.endswith(fontfile_extensions) :
-                make_chart \
-                  (
-                    patternstr= os.path.join(temp_dir, item),
-                    isfontfile = True,
-                    outfilename =
-                            "%s%s%s%s"
-                        %
-                            (outbasename, ("", "-")[outbasename != ""], os.path.splitext(item)[0], outext)
-                  )
-            else :
-                sys.stderr.write("ignore archive member “%s”\n" % item)
-            #end if
-        #end for
+
+        def scan_dir(parent) :
+            for item in os.listdir(parent) :
+                child = os.path.join(parent, item)
+                if item.endswith(fontfile_extensions) :
+                    make_chart \
+                      (
+                        patternstr = child,
+                        isfontfile = True,
+                        outfilename =
+                                "%s%s%s%s"
+                            %
+                                (outbasename, ("", "-")[outbasename != ""], os.path.splitext(item)[0], outext)
+                      )
+                elif os.path.isdir(child) :
+                    scan_dir(child)
+                else :
+                    sys.stderr.write("ignore archive member “%s”\n" % item)
+                #end if
+            #end for
+        #end scan_dir
+
+        scan_dir(temp_dir)
     finally :
         try :
             shutil.rmtree(temp_dir)
