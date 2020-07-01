@@ -35,6 +35,7 @@ import qahirah as qah
 from qahirah import \
     CAIRO, \
     Colour, \
+    Matrix, \
     Vector
 import freetype2 as freetype
 FT = freetype.FT
@@ -280,6 +281,11 @@ def make_chart(patternstr, isfontfile, outfilename) :
             g.select_font_face(label_font_name, CAIRO.FONT_SLANT_NORMAL, CAIRO.FONT_WEIGHT_NORMAL)
             g.set_font_size(title_size)
             show_name = "%s %s" % (show_face.family_name, show_face.style_name)
+            title_width = g.text_extents(show_name).x_advance
+            if title_width > chart_width :
+                # squash too-wide title to fit
+                g.font_matrix *= Matrix.scale(Vector(chart_width / title_width, 1.0))
+            #end if
             g.move_to \
               ((
                 (chart_width - g.text_extents(show_name)[2]) / 2, # horizontally centred
