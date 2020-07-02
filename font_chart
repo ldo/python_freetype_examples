@@ -135,6 +135,7 @@ max_label_large_descender = g.font_extents.descent
 g.set_font_size(label_small_size)
 max_label_small_ascender = g.font_extents.ascent
 max_label_small_descender = g.font_extents.descent
+max_label_width = g.text_extents("U+00000").x_advance * (1, 2.5)[show_glyph_codes]
 # sys.stderr.write("show ascender = %.3f, descender = %.3f, height = %.3f, max_advance = %.3f\n" % (max_show_ascender, max_show_descender, show_face.size["metrics"]["height"], max_show_advance)) # debug
 
 def make_chart(patternstr, isfontfile, outfilename) :
@@ -155,7 +156,7 @@ def make_chart(patternstr, isfontfile, outfilename) :
     #end if
     max_show_ascender = show_face.size["metrics"]["ascender"]
     max_show_descender = - show_face.size["metrics"]["descender"]
-    max_show_advance = show_face.size["metrics"]["max_advance"]
+    max_show_advance = max(show_face.size["metrics"]["max_advance"], max_label_width)
 
     nr_blocks = 0
     nr_rows = 0
