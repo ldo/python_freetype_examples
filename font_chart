@@ -45,6 +45,24 @@ from code_blocks import \
     CodeBlock, \
     code_blocks
 
+#+
+# Useful stuff
+#-
+
+def ensure_reasonable_umask() :
+    "ensures that the umask is set to a reasonable value, namely" \
+    " that user always has read+write+execute access to files that" \
+    " they create, while leaving the group- and other-access bits" \
+    " unchanged. Returns the previous and new umask values, for" \
+    " reference."
+    ensure_clear_in_umask = 0o700
+    oldmask = os.umask(0o077)
+      # temporarily set to some safe value
+    newmask = oldmask & ~ensure_clear_in_umask
+    os.umask(newmask)
+    return oldmask, newmask
+#end ensure_reasonable_umask
+
 def make_image_surface(from_bitmap) :
     "copies the contents of a freetype2.Bitmap object into an array and creates and" \
     " returns a qahirah.ImageSurface object wrapping it."
@@ -73,6 +91,7 @@ fontfile_extensions = (".otf", ".ttf")
 # Mainline
 #-
 
+ensure_reasonable_umask()
 margin = Vector(10, 10)
 textsize = 48 # default
 nr_cols = 32
