@@ -261,7 +261,7 @@ code_blocks = \
         CodeBlock("Mongolian Supplement", 0x11660, 0x1167F),
         CodeBlock("Takri", 0x11680, 0x116CF),
         CodeBlock("Ahom", 0x11700, 0x1173F),
-        CodeBlock("Dogra", 0x11800, 0x1183F),
+        CodeBlock("Dogra", 0x11800, 0x1184F),
         CodeBlock("Warang Citi", 0x118A0, 0x118FF),
         CodeBlock("Dives Akuru", 0x11900, 0x1195F),
         CodeBlock("Nandinagari", 0x119A0, 0x119FF),
