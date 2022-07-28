@@ -1,14 +1,14 @@
 #+
 # Useful Unicode-related stuff
 #
-# Copyright 2015-2020 by Lawrence D'Oliveiro <ldo@geek-central.gen.nz>. This
+# Copyright 2015-2021 by Lawrence D'Oliveiro <ldo@geek-central.gen.nz>. This
 # module is licensed CC0
 # <https://creativecommons.org/publicdomain/zero/1.0/>; do with it
 # what you will.
 #-
 
 #+
-# Data taken from Unicode 13.0.0 spec
+# Data taken from Unicode 14.0.0 spec
 #-
 
 class CodeBlock :
